@@ -14,7 +14,6 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHea
 import { Search, Activity, AlertTriangle, Shield, User, QrCode, FileWarning, CheckCircle, XCircle, AlertOctagon } from "lucide-react";
 import type { User as UserProfile } from "@/lib/types";
 
-// Mock data for demo
 const MOCK_PATIENT_DATA = {
   patient_id: "PAT_001",
   name: "Rohit Verma",
