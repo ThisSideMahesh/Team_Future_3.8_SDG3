@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight } from "lucide-react";
 import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp, useFirebase } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,7 +57,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: userType === 'health-provider' ? 'dr.verma@example.com' : 'rohan.sharma@example.com',
+      email: userType === 'health-provider' ? 'dr.verma@example.com' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : 'rohan.sharma@example.com',
       password: "password",
       name: "",
     },
@@ -123,48 +123,66 @@ export default function AuthForm({ userType }: AuthFormProps) {
         }
 
         initiateEmailSignUp(auth, values.email, values.password)
-            .then(userCredential => {
+            .then(async (userCredential) => {
                 const user = userCredential.user;
                 
                 let collectionName: string;
-                let newUser: UserProfile;
-
+                
                 const defaultName = values.name || values.email.split('@')[0];
                 const defaultEmail = values.email;
 
                 switch(userType) {
                     case 'health-provider':
                         collectionName = 'healthProviders';
-                        newUser = {
+                        const newProvider: HealthProvider = {
                             id: user.uid,
                             name: defaultName,
                             email: defaultEmail,
                             specialty: 'General Medicine',
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'doctor-avatar-1')?.imageUrl || ''
                         };
-                        break;
+                        return setDoc(doc(firestore, collectionName, user.uid), newProvider);
                     case 'institution-admin':
-                         collectionName = 'institutionAdmins';
-                         newUser = {
+                        const institutionsRef = collection(firestore, 'institutions');
+                        const q = query(institutionsRef, where('adminEmail', '==', defaultEmail), where('status', '==', 'active'));
+                        const instSnapshot = await getDocs(q);
+
+                        if (instSnapshot.empty) {
+                             toast({
+                                variant: "destructive",
+                                title: "Registration Error",
+                                description: "This email is not associated with a pre-registered, active institution. Please contact support.",
+                            });
+                            // Since we can't easily delete the auth user, we leave them in a state
+                            // where they can't log in to the dashboard. For a real app, this would
+                            // involve a cleanup function.
+                            return Promise.reject(new Error("Institution not found for admin email."));
+                        }
+                        const institutionDoc = instSnapshot.docs[0];
+                        const newAdmin: InstitutionAdmin = {
                             id: user.uid,
                             name: defaultName,
                             email: defaultEmail,
-                            avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || ''
+                            avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || '',
+                            institutionId: institutionDoc.id,
+                            role: 'Primary Admin'
                          };
-                         break;
+                         // Link admin UID to institution for easier lookup
+                         await updateDoc(institutionDoc.ref, { adminUid: user.uid });
+                         return setDoc(doc(firestore, 'institutionAdmins', user.uid), newAdmin);
                     case 'platform-admin':
                         collectionName = 'platformAdmins';
-                        newUser = {
+                        const newPlatformAdmin: PlatformAdmin = {
                             id: user.uid,
                             name: defaultName,
                             email: defaultEmail,
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || ''
                         };
-                        break;
+                         return setDoc(doc(firestore, collectionName, user.uid), newPlatformAdmin);
                     case 'patient':
                     default:
                         collectionName = 'patients';
-                        newUser = {
+                        const newPatient: Patient = {
                             id: user.uid,
                             name: defaultName,
                             email: defaultEmail,
@@ -172,13 +190,15 @@ export default function AuthForm({ userType }: AuthFormProps) {
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'patient-avatar-1')?.imageUrl || '',
                             bloodGroup: 'O+'
                         };
-                        break;
+                        return setDoc(doc(firestore, collectionName, user.uid), newPatient);
                 }
-                
-                const userDocRef = doc(firestore, collectionName, user.uid);
-                return setDoc(userDocRef, newUser);
             })
-            .catch(handleAuthError)
+            .catch(error => {
+                // Catch errors from signup or from the subsequent logic (e.g., institution not found)
+                if (error.message !== "Institution not found for admin email.") {
+                    handleAuthError(error);
+                }
+            })
             .finally(() => setIsLoading(false));
     }
   };

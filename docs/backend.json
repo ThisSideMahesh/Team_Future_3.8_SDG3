@@ -201,10 +201,16 @@
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "approved", "rejected"]
-        }
+          "enum": ["pending", "approved", "rejected", "active"]
+        },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "type": { "type": "string", "enum": ["Hospital", "Clinic", "Diagnostic", "PHC"] },
+        "registrationId": { "type": "string" },
+        "adminEmail": { "type": "string", "format": "email" },
+        "adminUid": { "type": "string" }
       },
-      "required": ["id", "name", "status"]
+      "required": ["id", "name", "status", "city", "state", "type", "adminEmail"]
     },
     "InstitutionAdmin": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -224,9 +230,12 @@
         },
         "institutionId": {
           "type": "string"
+        },
+        "role": {
+          "type": "string"
         }
       },
-      "required": ["id", "name", "email"]
+      "required": ["id", "name", "email", "institutionId"]
     },
     "PlatformAdmin": {
       "$schema": "http://json-schema.org/draft-07/schema#",

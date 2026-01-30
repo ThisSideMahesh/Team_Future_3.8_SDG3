@@ -47,7 +47,13 @@ export type Consent = {
 export type Institution = {
     id: string;
     name: string;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected' | 'active';
+    city: string;
+    state: string;
+    type: 'Hospital' | 'Clinic' | 'Diagnostic' | 'PHC';
+    registrationId: string;
+    adminEmail: string;
+    adminUid?: string;
 };
 
 export type InstitutionAdmin = {
@@ -55,7 +61,8 @@ export type InstitutionAdmin = {
     name: string;
     email: string;
     avatarUrl: string;
-    institutionId?: string;
+    institutionId: string;
+    role: string;
 };
 
 export type PlatformAdmin = {
