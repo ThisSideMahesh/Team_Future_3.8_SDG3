@@ -50,11 +50,7 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   
-  devIndicators: {
-    allowedDevOrigins: [
-      "https://6000-firebase-studio-1769757188156.cluster-fdkw7vjj7bgguspe3fbbc25tra.cloudworkstations.dev",
-    ]
-  },
+  allowedDevOrigins: ["*"],
   
   // Experimental features for performance
   experimental: {
