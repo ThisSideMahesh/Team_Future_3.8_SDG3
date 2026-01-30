@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Stethoscope, User, ShieldCheck } from "lucide-react";
+import { Stethoscope, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -26,6 +26,12 @@ export default function Home() {
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
+              <h1 className="font-headline text-4xl md:text-6xl font-bold">
+                Swasthya<span className="text-primary">Setu</span>
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-prose">
+                Ek Jeevan. Ek Swasthya Drishti.
+              </p>
               <p className="text-lg text-muted-foreground max-w-prose">
                 A unified platform connecting patients and doctors for a seamless healthcare experience. Access your aggregated health records from multiple providers, all in one place.
               </p>
