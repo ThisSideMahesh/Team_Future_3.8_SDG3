@@ -70,6 +70,14 @@ service cloud.firestore {
     function isHealthProvider() {
       return isSignedIn() && exists(/databases/$(database)/documents/healthProviders/$(request.auth.uid));
     }
+    
+    function isInstitutionAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/institutionAdmins/$(request.auth.uid));
+    }
+
+    function isPlatformAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+    }
 
     /**
      * Checks if a patient has granted consent for data aggregation.
@@ -96,18 +104,10 @@ service cloud.firestore {
      * Validates that the incoming document's ID matches the user's ID on creation.
      * Enforces relational integrity between the auth UID and the document content.
      */
-    function hasValidPatientIdOnCreate(patientId) {
-      return request.resource.data.id == patientId;
+    function hasValidIdOnCreate(userId) {
+      return request.resource.data.id == userId;
     }
     
-    /**
-     * Validates that the incoming document's ID matches the user's ID on creation.
-     * Enforces relational integrity between the auth UID and the document content.
-     */
-    function hasValidHealthProviderIdOnCreate(healthProviderId) {
-      return request.resource.data.id == healthProviderId;
-    }
-
     /**
      * Ensures the document's ID field is immutable on update.
      * Prevents re-assigning a document from one user to another.
@@ -129,7 +129,7 @@ service cloud.firestore {
     match /patients/{patientId} {
       allow get: if isOwner(patientId) || (isHealthProvider() && hasConsent(patientId));
       allow list: if false;
-      allow create: if isOwner(patientId) && hasValidPatientIdOnCreate(patientId);
+      allow create: if isOwner(patientId) && hasValidIdOnCreate(patientId);
       allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
       allow delete: if isOwner(patientId) && isExistingDoc();
 
@@ -164,10 +164,44 @@ service cloud.firestore {
     match /healthProviders/{healthProviderId} {
       allow get: if isOwner(healthProviderId);
       allow list: if false;
-      allow create: if isOwner(healthProviderId) && hasValidHealthProviderIdOnCreate(healthProviderId);
+      allow create: if isOwner(healthProviderId) && hasValidIdOnCreate(healthProviderId);
       allow update: if isOwner(healthProviderId) && isExistingDoc() && isIdImmutable();
       allow delete: if isOwner(healthProviderId) && isExistingDoc();
     }
+    
+    /**
+     * @description Rules for platform admin profile documents.
+     * @principle Only the owner can manage their profile.
+     */
+    match /platformAdmins/{adminId} {
+       allow read, write: if isOwner(adminId);
+    }
+    
+    /**
+     * @description Rules for institution admin profile documents.
+     * @principle Admins can manage their own profiles. Platform admins can view them.
+     */
+    match /institutionAdmins/{adminId} {
+      allow get: if isOwner(adminId) || isPlatformAdmin();
+      allow create, update, delete: if isOwner(adminId);
+    }
+    
+    /**
+     * @description Rules for healthcare institutions.
+     * @principle Platform admins have full control. Institution admins can manage their own institution.
+     */
+    match /institutions/{institutionId} {
+        function isInstitutionAdminOfThisInstitution() {
+            return isInstitutionAdmin() && get(/databases/$(database)/documents/institutionAdmins/$(request.auth.uid)).data.institutionId == institutionId;
+        }
+
+        allow get: if isPlatformAdmin() || isInstitutionAdminOfThisInstitution();
+        allow list: if isPlatformAdmin();
+        allow create: if isPlatformAdmin();
+        allow update: if isPlatformAdmin() || isInstitutionAdminOfThisInstitution();
+        allow delete: if false; // Only logical deletes by changing status
+    }
+
 
     /**
      * @description Rules for aggregated patient health records. This path contains a subcollection of actual records.

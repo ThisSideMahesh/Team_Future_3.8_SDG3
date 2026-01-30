@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import type { Patient, HealthProvider } from "@/lib/types";
+import type { Patient, HealthProvider, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -39,8 +39,10 @@ const formSchema = z.object({
   name: z.string().optional(),
 });
 
+type UserProfile = Patient | HealthProvider | InstitutionAdmin | PlatformAdmin;
+
 type AuthFormProps = {
-  userType: "health-provider" | "patient";
+  userType: "health-provider" | "patient" | "institution-admin" | "platform-admin";
 };
 
 export default function AuthForm({ userType }: AuthFormProps) {
@@ -63,7 +65,13 @@ export default function AuthForm({ userType }: AuthFormProps) {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-        const path = userType === 'health-provider' ? '/doctor/dashboard' : '/patient/dashboard';
+        let path = '/';
+        switch (userType) {
+            case 'health-provider': path = '/doctor/dashboard'; break;
+            case 'patient': path = '/patient/dashboard'; break;
+            case 'institution-admin': path = '/institution-admin/dashboard'; break;
+            case 'platform-admin': path = '/platform-admin/dashboard'; break;
+        }
         router.push(path);
     }
   }, [user, isUserLoading, router, userType]);
@@ -117,40 +125,73 @@ export default function AuthForm({ userType }: AuthFormProps) {
         initiateEmailSignUp(auth, values.email, values.password)
             .then(userCredential => {
                 const user = userCredential.user;
-                const collectionName = userType === 'health-provider' ? 'healthProviders' : 'patients';
-                const userDocRef = doc(firestore, collectionName, user.uid);
                 
-                let newUser: Patient | HealthProvider;
+                let collectionName: string;
+                let newUser: UserProfile;
 
-                if (userType === 'health-provider') {
-                    newUser = {
-                        id: user.uid,
-                        name: values.name || `Dr. ${values.email.split('@')[0]}`,
-                        email: values.email,
-                        specialty: 'General Medicine',
-                        avatarUrl: PlaceHolderImages.find(p => p.id === 'doctor-avatar-1')?.imageUrl || ''
-                    };
-                } else {
-                    newUser = {
-                        id: user.uid,
-                        name: values.name || values.email.split('@')[0],
-                        email: values.email,
-                        dateOfBirth: '1990-01-01',
-                        avatarUrl: PlaceHolderImages.find(p => p.id === 'patient-avatar-1')?.imageUrl || '',
-                        bloodGroup: 'O+'
-                    };
+                const defaultName = values.name || values.email.split('@')[0];
+                const defaultEmail = values.email;
+
+                switch(userType) {
+                    case 'health-provider':
+                        collectionName = 'healthProviders';
+                        newUser = {
+                            id: user.uid,
+                            name: defaultName,
+                            email: defaultEmail,
+                            specialty: 'General Medicine',
+                            avatarUrl: PlaceHolderImages.find(p => p.id === 'doctor-avatar-1')?.imageUrl || ''
+                        };
+                        break;
+                    case 'institution-admin':
+                         collectionName = 'institutionAdmins';
+                         newUser = {
+                            id: user.uid,
+                            name: defaultName,
+                            email: defaultEmail,
+                            avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || ''
+                         };
+                         break;
+                    case 'platform-admin':
+                        collectionName = 'platformAdmins';
+                        newUser = {
+                            id: user.uid,
+                            name: defaultName,
+                            email: defaultEmail,
+                            avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || ''
+                        };
+                        break;
+                    case 'patient':
+                    default:
+                        collectionName = 'patients';
+                        newUser = {
+                            id: user.uid,
+                            name: defaultName,
+                            email: defaultEmail,
+                            dateOfBirth: '1990-01-01',
+                            avatarUrl: PlaceHolderImages.find(p => p.id === 'patient-avatar-1')?.imageUrl || '',
+                            bloodGroup: 'O+'
+                        };
+                        break;
                 }
                 
-                // Using setDoc which returns a promise.
+                const userDocRef = doc(firestore, collectionName, user.uid);
                 return setDoc(userDocRef, newUser);
             })
             .catch(handleAuthError)
             .finally(() => setIsLoading(false));
     }
   };
+  
+  let userTypeName: string;
+  switch(userType) {
+    case 'health-provider': userTypeName = 'Health Provider'; break;
+    case 'patient': userTypeName = 'Patient'; break;
+    case 'institution-admin': userTypeName = 'Institution Admin'; break;
+    case 'platform-admin': userTypeName = 'Platform Admin'; break;
+  }
 
   const title = isLogin ? "Login" : "Sign Up";
-  const userTypeName = userType === 'health-provider' ? 'Health Provider' : 'Patient';
   const description = `Enter your details to ${isLogin ? "access your account" : "create an account"}.`;
   const buttonText = isLogin ? "Login" : "Sign Up";
   const toggleText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
@@ -225,5 +266,3 @@ export default function AuthForm({ userType }: AuthFormProps) {
     </div>
   );
 }
-
-    

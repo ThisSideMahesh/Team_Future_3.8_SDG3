@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Stethoscope, User, ShieldCheck } from "lucide-react";
+import { Stethoscope, User, ShieldCheck, Building, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Logo from "@/components/icons/logo";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-image');
@@ -17,9 +18,24 @@ export default function Home() {
           <Button variant="ghost" asChild>
             <Link href="/login/patient">Patient Login</Link>
           </Button>
-          <Button asChild>
-            <Link href="/login/doctor">Health Provider Login</Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                Professional Login <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/login/doctor">Health Provider</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/login/institution-admin">Institution Admin</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/login/platform-admin">Platform Admin</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <main className="flex-grow">
@@ -107,5 +123,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

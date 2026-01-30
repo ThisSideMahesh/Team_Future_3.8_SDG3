@@ -44,4 +44,23 @@ export type Consent = {
     granted: boolean;
 }
 
-    
+export type Institution = {
+    id: string;
+    name: string;
+    status: 'pending' | 'approved' | 'rejected';
+};
+
+export type InstitutionAdmin = {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+    institutionId?: string;
+};
+
+export type PlatformAdmin = {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+};

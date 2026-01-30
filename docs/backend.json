@@ -186,6 +186,66 @@
         "reportName",
         "reportData"
       ]
+    },
+    "Institution": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Institution",
+      "type": "object",
+      "description": "Represents a healthcare institution.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        }
+      },
+      "required": ["id", "name", "status"]
+    },
+    "InstitutionAdmin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InstitutionAdmin",
+      "type": "object",
+      "description": "Represents an administrator for a healthcare institution.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "institutionId": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "PlatformAdmin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PlatformAdmin",
+      "type": "object",
+      "description": "Represents a platform administrator for SwasthyaSetu.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "required": ["id", "name", "email"]
     }
   },
   "auth": {
@@ -295,10 +355,35 @@
             }
           ]
         }
+      },
+      {
+        "path": "/institutions/{institutionId}",
+        "definition": {
+          "entityName": "Institution",
+          "schema": { "$ref": "#/backend/entities/Institution" },
+          "description": "Stores healthcare institution profiles.",
+          "params": [{ "name": "institutionId", "description": "The unique ID for the institution." }]
+        }
+      },
+      {
+        "path": "/institutionAdmins/{adminId}",
+        "definition": {
+          "entityName": "InstitutionAdmin",
+          "schema": { "$ref": "#/backend/entities/InstitutionAdmin" },
+          "description": "Stores institution admin profiles.",
+          "params": [{ "name": "adminId", "description": "The unique ID for the institution admin." }]
+        }
+      },
+      {
+        "path": "/platformAdmins/{adminId}",
+        "definition": {
+          "entityName": "PlatformAdmin",
+          "schema": { "$ref": "#/backend/entities/PlatformAdmin" },
+          "description": "Stores platform admin profiles.",
+          "params": [{ "name": "adminId", "description": "The unique ID for the platform admin." }]
+        }
       }
     ],
     "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, health providers, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
   }
 }
-
-    

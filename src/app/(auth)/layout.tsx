@@ -27,7 +27,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { HealthProvider, Patient } from "@/lib/types";
+import type { HealthProvider, Patient, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
+
+type UserProfile = Patient | HealthProvider | InstitutionAdmin | PlatformAdmin;
 
 export default function AuthLayout({
   children,
@@ -39,22 +41,32 @@ export default function AuthLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const userType = pathname.includes('/doctor/') ? 'health-provider' : 'patient';
-  const collectionName = userType === 'health-provider' ? 'healthProviders' : 'patients';
+  const [userType, collectionName, loginPath] = useMemo(() => {
+    if (pathname.includes('/doctor/')) {
+        return ['health-provider', 'healthProviders', '/login/doctor'];
+    }
+    if (pathname.includes('/institution-admin/')) {
+        return ['institution-admin', 'institutionAdmins', '/login/institution-admin'];
+    }
+    if (pathname.includes('/platform-admin/')) {
+        return ['platform-admin', 'platformAdmins', '/login/platform-admin'];
+    }
+    // Default to patient
+    return ['patient', 'patients', '/login/patient'];
+  }, [pathname]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-        const loginPath = userType === 'health-provider' ? '/login/doctor' : '/login/patient';
         router.push(loginPath);
     }
-  }, [user, isUserLoading, router, userType]);
+  }, [user, isUserLoading, router, loginPath]);
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, collectionName, user.uid);
   }, [firestore, user, collectionName]);
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<HealthProvider | Patient>(userDocRef);
+  const { data: userData, isLoading: isDataLoading } = useDoc<UserProfile>(userDocRef);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -163,5 +175,3 @@ export default function AuthLayout({
     </SidebarProvider>
   );
 }
-
-    
