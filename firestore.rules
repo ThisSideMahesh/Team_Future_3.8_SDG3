@@ -37,6 +37,11 @@ service cloud.firestore {
       return consentDoc.data.granted == true;
     }
     
+    // Checks if a temp patient record exists and is currently active.
+    function isActiveTempPatient(tempId) {
+      return get(/databases/$(database)/documents/temp_patients/$(tempId)).data.status == 'ACTIVE';
+    }
+    
     // --------------------------------
     // Collection Rules
     // --------------------------------
@@ -106,6 +111,35 @@ service cloud.firestore {
     // Internal meta collection for tracking seeding status. Should not be client-accessible.
     match /internal_meta/{docId} {
         allow read, write: if false;
+    }
+
+    // --------------------------------
+    // Temporary Patient Rules
+    // --------------------------------
+
+    // Temp patient metadata documents.
+    // Healthcare providers can create them in an emergency.
+    // Admins can read metadata for auditing, but cannot update them.
+    // Updates (like merging) should be handled by a backend process.
+    match /temp_patients/{tempId} {
+        allow create: if isRole('healthcare_provider') && belongsToInstitution(request.resource.data.institution_id);
+        allow get: if (isRole('healthcare_provider') && belongsToInstitution(resource.data.institution_id)) ||
+                      (isRole('institution_admin') && belongsToInstitution(resource.data.institution_id)) ||
+                      isRole('platform_admin');
+        allow list: if isRole('institution_admin') || isRole('platform_admin');
+        allow update, delete: if false;
+    }
+    
+    // Temp patient clinical records.
+    // These can be created and updated by providers from the same institution
+    // ONLY while the temporary patient record is 'ACTIVE'.
+    // Once merged, these records become read-only to prevent tampering.
+    match /temp_records/{tempId} {
+        allow create: if isRole('healthcare_provider') && belongsToInstitution(request.resource.data.institution_id);
+        allow get, update: if isRole('healthcare_provider') && 
+                               belongsToInstitution(resource.data.institution_id) &&
+                               isActiveTempPatient(tempId);
+        allow list, delete: if false;
     }
   }
 }
