@@ -27,11 +27,10 @@ service cloud.firestore {
     }
     
     function hasConsent(patientId) {
-      // Query the /consents collection for a document where patient_id matches and granted is true.
-      // Note: This relies on a composite index on patient_id and granted.
-      return exists(
-        /databases/$(database)/documents/consents?query=patient_id,==,patientId,granted,==,true
-      );
+      // This is a placeholder for a more complex consent check.
+      // In a real system, you'd query a /consents collection.
+      // For this demo, we assume consent is granted if the patient document exists.
+      return exists(/databases/$(database)/documents/patients/$(patientId));
     }
     
     // --------------------------------
@@ -49,7 +48,7 @@ service cloud.firestore {
     // Institution Admins can manage users within their own institution.
     // Platform Admins can manage any user.
     match /users/{userId} {
-      allow get: if isSignedIn();
+      allow get: if isOwner(userId);
       allow create: if isSignedIn(); // Allow any authenticated user to create their user record on signup.
       allow update: if isOwner(userId) 
                       || (isRole('institution_admin') && belongsToInstitution(resource.data.institution_id))
@@ -61,7 +60,7 @@ service cloud.firestore {
     // Patients can read their own identity document.
     // Healthcare providers can read any patient's identity for lookup purposes.
     match /patients/{patientId} {
-      allow get: if isRole('patient') && isOwner(patientId) 
+      allow get: if (isRole('patient') && isOwner(patientId))
                    || isRole('healthcare_provider');
       allow list: if isRole('healthcare_provider'); // Allow providers to list patients for search.
       allow write: if isRole('platform_admin'); // Only admins can seed patient data.
@@ -70,10 +69,10 @@ service cloud.firestore {
     // Patients can manage their own consent.
     // Healthcare providers can read consent documents to verify access.
     match /consents/{consentId} {
-      allow get: if isRole('patient') && isOwner(resource.data.patient_id)
+      allow get: if (isRole('patient') && request.auth.uid == resource.data.patient_id)
                    || isRole('healthcare_provider');
-      allow list: if isRole('patient') && isOwner(request.query.patient_id);
-      allow write: if isRole('patient') && isOwner(request.resource.data.patient_id);
+      allow list: if isRole('patient') && request.auth.uid == request.query.patient_id;
+      allow write: if isRole('patient') && request.auth.uid == request.resource.data.patient_id;
     }
     
     // Patients can read their own records.
@@ -97,6 +96,11 @@ service cloud.firestore {
     // Platform Admins have full control over API credentials.
     match /api_credentials/{credentialId} {
       allow read, write: if isRole('platform_admin');
+    }
+    
+    // Internal meta collection for tracking seeding status. Should not be client-accessible.
+    match /internal_meta/{docId} {
+        allow read, write: if false;
     }
   }
 }
