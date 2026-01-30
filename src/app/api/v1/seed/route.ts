@@ -31,12 +31,12 @@ const usersData = [
   { user_id: "IA_001", name: "Riya Sharma", email: "admin@aarogyanova.demo", role: "institution_admin", institution_id: "INST_001", active: true, avatarUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk4MjI0ODJ8MA&ixlib=rb-4.0.3&q=80&w=1080" },
   { user_id: "PA_001", name: "Platform Admin", email: "platform.admin@swasthyasetu.demo", role: "platform_admin", active: true, avatarUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk4MjI0ODJ8MA&ixlib=rb-4.0.3&q=80&w=1080" },
   { user_id: "PAT_001", name: "Rohit Verma", email: "rohit.verma@example.com", role: "patient", active: true, avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk3NDY1MTR8MA&ixlib=rb-4.0.3&q=80&w=1080" },
-  { user_id: "PAT_002", name: "Anita Kulkarni", email: "anita.kulkarni@example.com", role: "patient", active: true, avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTY3OTc0NjUxNA&ixlib=rb-4.0.3&q=80&w=1080" },
+  { user_id: "PAT_002", name: "Anita Kulkarni", email: "anita.kulkarni@example.com", role: "patient", active: true, avatarUrl: "https://images.unsplash.com/photo-1582750421881-2781b953a5de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxudXJzZSUyMHBvcnRyYWl0fGVufDB8fHx8MTc3MDA2MzYyNnww&ixlib=rb-4.0.3&q=80&w=1080" },
 ];
 
 const patientsData = [
   { patient_id: "PAT_001", name: "Rohit Verma", dob: "1994-06-12", gender: "Male", primary_institution: "INST_001", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk3NDY1MTR8MA&ixlib=rb-4.0.3&q=80&w=1080" },
-  { patient_id: "PAT_002", name: "Anita Kulkarni", dob: "1988-02-03", gender: "Female", primary_institution: "INST_002", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTY3OTc0NjUxNA&ixlib=rb-4.0.3&q=80&w=1080" },
+  { patient_id: "PAT_002", name: "Anita Kulkarni", dob: "1988-02-03", gender: "Female", primary_institution: "INST_002", avatarUrl: "https://images.unsplash.com/photo-1582750421881-2781b953a5de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxudXJzZSUyMHBvcnRyYWl0fGVufDB8fHx8MTc3MDA2MzYyNnww&ixlib=rb-4.0.3&q=80&w=1080" },
 ];
 
 const consentsData = [

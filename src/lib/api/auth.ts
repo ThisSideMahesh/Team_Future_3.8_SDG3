@@ -1,6 +1,7 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/api/admin';
-import type { Institution } from '@/lib/types';
+import type { Institution, ApiCredential } from '@/lib/types';
 
 export type ApiRole = 'healthcare_provider' | 'institution_admin';
 
@@ -40,16 +41,22 @@ export function withApiAuth(handler: AuthenticatedApiHandler, allowedRoles: ApiR
         }
 
         try {
-            const institutionsRef = adminDb.collection('institutions');
-            const q = institutionsRef.where('apiKey', '==', apiKey);
+            const credsRef = adminDb.collection('api_credentials');
+            const q = credsRef.where('api_key', '==', apiKey).where('enabled', '==', true);
             const querySnapshot = await q.get();
 
             if (querySnapshot.empty) {
-                return NextResponse.json({ error: 'Unauthorized: Invalid API key.' }, { status: 401 });
+                return NextResponse.json({ error: 'Unauthorized: Invalid or disabled API key.' }, { status: 401 });
             }
 
-            // Assuming API keys are unique, there should only be one result.
-            const institutionDoc = querySnapshot.docs[0];
+            const credDoc = querySnapshot.docs[0];
+            const apiCredential = credDoc.data() as ApiCredential;
+
+            const institutionDoc = await adminDb.collection('institutions').doc(apiCredential.institution_id).get();
+            if (!institutionDoc.exists) {
+                return NextResponse.json({ error: 'Unauthorized: Institution associated with API key not found.' }, { status: 401 });
+            }
+
             const institution = { id: institutionDoc.id, ...institutionDoc.data() } as Institution;
 
             // All checks passed. Call the actual API handler with the validated institution and role.
