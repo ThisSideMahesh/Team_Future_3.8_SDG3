@@ -7,7 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight } from "lucide-react";
-import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp } from "@/firebase";
+import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp, useFirebase } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +30,13 @@ import {
 import { Input } from "@/components/ui/input";
 import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import type { Patient, Doctor } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  name: z.string().optional(),
 });
 
 type AuthFormProps = {
@@ -45,6 +49,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -52,6 +57,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
     defaultValues: {
       email: userType === 'doctor' ? 'dr.verma@example.com' : 'rohan.sharma@example.com',
       password: "password",
+      name: "",
     },
   });
 
@@ -65,15 +71,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
 
-    const authPromise = isLogin
-        ? initiateEmailSignIn(auth, values.email, values.password)
-        : initiateEmailSignUp(auth, values.email, values.password);
-
-    // A successful login is handled by the onAuthStateChanged listener
-    // which will update the `user` from the `useUser` hook, triggering
-    // the useEffect to redirect. We only need to handle failures here.
-    authPromise
-      .catch((error) => {
+    const handleAuthError = (error: any) => {
         let description = "An unknown authentication error occurred.";
         if (error.code) {
           switch (error.code) {
@@ -83,13 +81,17 @@ export default function AuthForm({ userType }: AuthFormProps) {
               description = "Invalid credentials. Please check your email and password.";
               break;
             case 'auth/email-already-in-use':
-              description = "An account with this email is already in use.";
+              description = "An account with this email is already in use. Please log in.";
+              setIsLogin(true); // Switch to login view
               break;
             case 'auth/weak-password':
               description = "The password is too weak. It must be at least 6 characters long.";
               break;
+            case 'permission-denied':
+                description = "There was an issue setting up your profile. Please try again.";
+                break;
             default:
-              description = "An error occurred. Please try again.";
+              description = `An error occurred: ${error.message}`;
               break;
           }
         }
@@ -98,17 +100,58 @@ export default function AuthForm({ userType }: AuthFormProps) {
           title: "Authentication Failed",
           description: description,
         });
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    }
+
+    if (isLogin) {
+        initiateEmailSignIn(auth, values.email, values.password)
+            .catch(handleAuthError)
+            .finally(() => setIsLoading(false));
+    } else { // Sign up
+        if (!values.name || values.name.trim() === "") {
+            form.setError("name", { type: "manual", message: "Name is required for sign up." });
+            setIsLoading(false);
+            return;
+        }
+
+        initiateEmailSignUp(auth, values.email, values.password)
+            .then(userCredential => {
+                const user = userCredential.user;
+                const collectionName = userType === 'doctor' ? 'doctors' : 'patients';
+                const userDocRef = doc(firestore, collectionName, user.uid);
+                
+                let newUser: Patient | Doctor;
+
+                if (userType === 'doctor') {
+                    newUser = {
+                        id: user.uid,
+                        name: values.name || `Dr. ${values.email.split('@')[0]}`,
+                        email: values.email,
+                        specialty: 'General Medicine',
+                        avatarUrl: PlaceHolderImages.find(p => p.id === 'doctor-avatar-1')?.imageUrl || ''
+                    };
+                } else {
+                    newUser = {
+                        id: user.uid,
+                        name: values.name || values.email.split('@')[0],
+                        email: values.email,
+                        dateOfBirth: '1990-01-01',
+                        avatarUrl: PlaceHolderImages.find(p => p.id === 'patient-avatar-1')?.imageUrl || '',
+                        bloodGroup: 'O+'
+                    };
+                }
+                
+                // Using setDoc which returns a promise.
+                return setDoc(userDocRef, newUser);
+            })
+            .catch(handleAuthError)
+            .finally(() => setIsLoading(false));
+    }
   };
 
   const title = isLogin ? "Login" : "Sign Up";
   const description = `Enter your details to ${isLogin ? "access your account" : "create an account"}.`;
   const buttonText = isLogin ? "Login" : "Sign Up";
   const toggleText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
-  const idLabel = "Email";
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -123,14 +166,29 @@ export default function AuthForm({ userType }: AuthFormProps) {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {!isLogin && (
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{idLabel}</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Enter your ${idLabel}`} {...field} />
+                      <Input placeholder={`Enter your email`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
