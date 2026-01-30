@@ -11,9 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Activity, AlertTriangle, Shield, User, QrCode, FileWarning, CheckCircle, XCircle, AlertOctagon } from "lucide-react";
-import type { User as UserProfile, HealthcareProvider, Institution } from "@/lib/types";
+import type { User as UserProfile } from "@/lib/types";
 
 // Mock data for demo
 const MOCK_PATIENT_DATA = {
