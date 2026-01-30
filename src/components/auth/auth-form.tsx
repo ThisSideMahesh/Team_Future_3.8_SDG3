@@ -8,11 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight } from "lucide-react";
 import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp, useFirebase } from "@/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, query, collection, where, getDocs } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
@@ -110,7 +110,6 @@ export default function AuthForm({ userType }: AuthFormProps) {
               // For demo, we fetch the pre-seeded user data to create the auth account
               // In a real app, this would be a more complex invitation/verification flow
               const userRef = doc(firestore, "users", authUser.uid);
-              const seededUserRef = doc(firestore, "users", `PA_001`); // A placeholder, we need to find the correct seeded user by email
               
               // This is a simplified demo flow. We find the pre-seeded user doc by its email
               // and essentially "claim" it by setting its data on a new doc with the real auth UID.
