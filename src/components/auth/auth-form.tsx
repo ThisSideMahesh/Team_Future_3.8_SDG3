@@ -57,7 +57,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: userType === 'health-provider' ? 'dr.verma@example.com' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : 'rohan.sharma@example.com',
+      email: userType === 'health-provider' ? 'dr.verma@example.com' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : userType === 'platform-admin' ? 'admin@swasthyasetu.org' : 'rohan.sharma@example.com',
       password: "password",
       name: "",
     },
@@ -67,7 +67,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
     if (!isUserLoading && user) {
         let path = '/';
         switch (userType) {
-            case 'health-provider': path = '/doctor/dashboard'; break;
+            case 'health-provider': path = '/health-provider/dashboard'; break;
             case 'patient': path = '/patient/dashboard'; break;
             case 'institution-admin': path = '/institution-admin/dashboard'; break;
             case 'platform-admin': path = '/platform-admin/dashboard'; break;
@@ -167,8 +167,6 @@ export default function AuthForm({ userType }: AuthFormProps) {
                             institutionId: institutionDoc.id,
                             role: 'Primary Admin'
                          };
-                         // Link admin UID to institution for easier lookup
-                         await updateDoc(institutionDoc.ref, { adminUid: user.uid });
                          return setDoc(doc(firestore, 'institutionAdmins', user.uid), newAdmin);
                     case 'platform-admin':
                         collectionName = 'platformAdmins';
@@ -204,17 +202,32 @@ export default function AuthForm({ userType }: AuthFormProps) {
   };
   
   let userTypeName: string;
+  let defaultEmail: string;
   switch(userType) {
-    case 'health-provider': userTypeName = 'Health Provider'; break;
-    case 'patient': userTypeName = 'Patient'; break;
-    case 'institution-admin': userTypeName = 'Institution Admin'; break;
-    case 'platform-admin': userTypeName = 'Platform Admin'; break;
+    case 'health-provider': 
+      userTypeName = 'Health Provider'; 
+      defaultEmail = 'dr.verma@example.com';
+      break;
+    case 'patient': 
+      userTypeName = 'Patient'; 
+      defaultEmail = 'rohan.sharma@example.com';
+      break;
+    case 'institution-admin': 
+      userTypeName = 'Institution Admin';
+      defaultEmail = 'admin@aarogyanova.demo';
+      break;
+    case 'platform-admin': 
+      userTypeName = 'Platform Admin'; 
+      defaultEmail = 'admin@swasthyasetu.org';
+      break;
   }
 
   const title = isLogin ? "Login" : "Sign Up";
   const description = `Enter your details to ${isLogin ? "access your account" : "create an account"}.`;
   const buttonText = isLogin ? "Login" : "Sign Up";
   const toggleText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
+  
+  form.watch('email');
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -251,7 +264,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Enter your email`} {...field} />
+                      <Input placeholder={`e.g. ${defaultEmail}`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
