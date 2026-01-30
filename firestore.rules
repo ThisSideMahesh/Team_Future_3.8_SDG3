@@ -32,7 +32,8 @@
  *   ownership without performing extra reads.
  * - `accessLogs` documents contain both a `patientId` and a `healthProviderId`, allowing both parties
  *   to view a relevant log entry and enabling rules to verify the creator of the log.
- * This approach avoids slow and costly `get()` calls within rule evaluations.
+ * This approach avoids slow and costly `get()` calls within rule evaluations where possible, but they
+ * are necessary for checking cross-document state like consent.
  *
  * Structural Segregation:
  * The design uses separate collections for different data types (e.g., `patients`, `healthRecords`,
@@ -73,6 +74,8 @@ service cloud.firestore {
     /**
      * Checks if a patient has granted consent for data aggregation.
      * Assumes the consent document ID is the same as the patient's UID for predictability.
+     * CRITICAL: This function performs a `get()`, which requires the calling user (the Health Provider)
+     * to have read access to the target consent document.
      */
     function hasConsent(patientId) {
       // Check if a consent document for this patient exists and its 'granted' field is true.
@@ -133,14 +136,15 @@ service cloud.firestore {
       /**
        * @description Rules for a patient's consent documents.
        * @path /patients/{patientId}/consents/{consentId}
-       * @allow (list) A patient can list their own consent documents. `auth.uid == patientId`
-       * @allow (update) A patient can update their own consent status. `auth.uid == patientId`
+       * @allow (get) A patient can read their own consent documents. A health provider can read it to verify consent.
+       * @allow (list) A patient can list their own consent documents.
+       * @allow (update) A patient can update their own consent status.
        * @deny (create) A health provider cannot create a consent document for a patient.
-       * @deny (update) A patient cannot modify another patient's consent. `auth.uid != patientId`
-       * @principle Enforces strict document ownership within a user's data tree.
+       * @deny (update) A patient cannot modify another patient's consent.
+       * @principle Enforces strict document ownership for writes, but allows consented reads for verification.
        */
       match /consents/{consentId} {
-        allow get: if isOwner(patientId);
+        allow get: if isOwner(patientId) || isHealthProvider();
         allow list: if isOwner(patientId);
         allow create: if isOwner(patientId) && request.resource.data.patientId == patientId;
         allow update: if isOwner(patientId) && isExistingDoc() && request.resource.data.patientId == resource.data.patientId;
