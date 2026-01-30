@@ -14,6 +14,8 @@ const institutionsData = [
   { institution_id: "INST_008", name: "JeevanRaksha Emergency Hospital", city: "Aapda Nagar", state: "Suraksha Pradesh", status: "ACTIVE", created_at: "2026-01-21T11:25:00Z" },
   { institution_id: "INST_009", name: "Hope Medical Clinic", city: "Devpur", state: "Dakshin Pradesh", status: "REJECTED", created_at: "2026-01-21T11:30:00Z" },
   { institution_id: "INST_010", name: "Wellness First Center", city: "Shantipur", state: "Madhav Pradesh", status: "PENDING", created_at: "2026-01-21T11:35:00Z" },
+  // Hospital C - New institution for interoperability demo
+  { institution_id: "INST_C", name: "SwasthyaCare General Hospital", city: "Nandipur", state: "Uttar Pradesh", status: "ACTIVE", created_at: "2026-01-28T10:00:00Z" },
 ];
 
 const usersData = [
