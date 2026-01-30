@@ -53,11 +53,10 @@ export function HealthcareProviderView() {
   const handleEmergencyAccess = () => {
     setShowEmergencyDialog(false);
     setEmergencyAccess(true);
-    // Mock: Fetch limited emergency data
     setSearchedPatient({
       ...MOCK_PATIENT_DATA,
-      medications: null, // Not shown in emergency
-      lab_summaries: null, // Not shown in emergency
+      medications: null,
+      lab_summaries: null,
     });
   };
 
