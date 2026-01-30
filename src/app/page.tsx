@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Stethoscope, User, ShieldCheck, Building, ChevronDown } from "lucide-react";
+import { Stethoscope, User, ShieldCheck, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -26,7 +26,7 @@ export default function Home() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link href="/login/doctor">Healthcare Provider</Link>
+                <Link href="/login/healthcare-provider">Healthcare Provider</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/login/institution-admin">Institution Admin</Link>
@@ -50,7 +50,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
-                  <Link href="/login/doctor">
+                  <Link href="/login/healthcare-provider">
                     I'm a Healthcare Provider <Stethoscope className="ml-2" />
                   </Link>
                 </Button>
@@ -123,5 +123,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

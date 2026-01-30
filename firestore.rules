@@ -1,46 +1,3 @@
-/**
- * SwasthyaSetu - Firestore Security Rules
- *
- * Core Philosophy:
- * This ruleset enforces a strict, patient-centric security model where consent is paramount.
- * The default posture is "deny all," with access granted explicitly based on user roles and
- * data ownership. Patients have ultimate control over their personal data and consent settings.
- * Healthcare Providers can only access patient data when permitted, and all such access is logged for auditing.
- *
- * Data Structure:
- * The data is organized into top-level collections for primary entities: `patients`, `healthcareProviders`,
- * `healthRecords`, `accessLogs`, and `labReports`. This segregation allows for distinct and granular
- * security rules per entity. Patient-specific data that they directly control, such as consent,
- * is stored in a subcollection (`/patients/{patientId}/consents`) to leverage path-based
- * security for clear ownership.
- *
- * Key Security Decisions:
- * - Default Deny: All operations are denied unless an `allow` rule explicitly permits them.
- * - Strict Ownership: Users (patients and healthcare providers) can only access and manage their own
- *   profile documents (`/patients/{userId}` or `/healthcareProviders/{userId}`).
- * - No Public Listing: To prevent data scraping and protect user privacy, listing documents
- *   in top-level collections like `patients` and `healthcareProviders` is disabled.
- * - Immutable Logs: The `accessLogs` collection is append-only. Once a log is created,
- *   it cannot be modified or deleted, ensuring a secure audit trail.
- * - Backend-Managed Records: Health records are considered sensitive and are managed exclusively
- *   by trusted backend services (Cloud Functions). Direct client writes are disabled. Patients
- *   are granted read-only access to their own records.
- *
- * Denormalization for Authorization:
- * To ensure fast and secure authorization checks, this ruleset relies on denormalized data.
- * - `healthRecords` documents contain a `patientId` field, allowing rules to verify patient
- *   ownership without performing extra reads.
- * - `accessLogs` documents contain both a `patientId` and a `healthcareProviderId`, allowing both parties
- *   to view a relevant log entry and enabling rules to verify the creator of the log.
- * This approach avoids slow and costly `get()` calls within rule evaluations where possible, but they
- * are necessary for checking cross-document state like consent.
- *
- * Structural Segregation:
- * The design uses separate collections for different data types (e.g., `patients`, `healthRecords`,
- * `accessLogs`) instead of a single collection with role-based flags. This provides stronger
- * security boundaries, simplifies rules, and makes list operations inherently safer, as each
- * collection can have its own specific listing permissions.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -49,214 +6,97 @@ service cloud.firestore {
     // Helper Functions
     // --------------------------------
 
-    /**
-     * Checks if a user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     * This is the primary function for verifying document ownership.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Checks if the authenticated user is a healthcare provider by verifying their profile document.
-     */
-    function isHealthcareProvider() {
-      return isSignedIn() && exists(/databases/$(database)/documents/healthcareProviders/$(request.auth.uid));
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isRole(role) {
+      return isSignedIn() && getUserData(request.auth.uid).role == role;
+    }
+
+    function belongsToInstitution(institutionId) {
+      return isSignedIn() && getUserData(request.auth.uid).institution_id == institutionId;
     }
     
-    function isInstitutionAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/institutionAdmins/$(request.auth.uid));
-    }
-
-    function isPlatformAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
-    }
-
-    /**
-     * Checks if a patient has granted consent for data aggregation.
-     * Assumes the consent document ID is the same as the patient's UID for predictability.
-     * CRITICAL: This function performs a `get()`, which requires the calling user (the Healthcare Provider)
-     * to have read access to the target consent document.
-     */
     function hasConsent(patientId) {
-      // Check if a consent document for this patient exists and its 'granted' field is true.
-      // We assume the consent document ID is the same as the patientId for predictability.
-      return exists(/databases/$(database)/documents/patients/$(patientId)/consents/$(patientId))
-             && get(/databases/$(database)/documents/patients/$(patientId)/consents/$(patientId)).data.granted == true;
-    }
-
-    /**
-     * Checks if a document currently exists.
-     * Used in update/delete rules to prevent acting on non-existent data.
-     */
-    function isExistingDoc() {
-      return resource != null;
-    }
-
-    /**
-     * Validates that the incoming document's ID matches the user's ID on creation.
-     * Enforces relational integrity between the auth UID and the document content.
-     */
-    function hasValidIdOnCreate(userId) {
-      return request.resource.data.id == userId;
+      // Query the /consents collection for a document where patient_id matches and granted is true.
+      // Note: This relies on a composite index on patient_id and granted.
+      return exists(
+        /databases/$(database)/documents/consents?query=patient_id,==,patientId,granted,==,true
+      );
     }
     
-    /**
-     * Ensures the document's ID field is immutable on update.
-     * Prevents re-assigning a document from one user to another.
-     */
-    function isIdImmutable() {
-      return request.resource.data.id == resource.data.id;
-    }
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
 
-
-    /**
-     * @description Rules for patient profile documents.
-     * @path /patients/{patientId}
-     * @allow (get) A patient can read their own profile. A healthcare provider can read a patient's profile if consent is granted.
-     * @allow (create) A new patient can create their own profile document. `auth.uid == patientId`
-     * @deny (list) No user can list all patients in the system.
-     * @deny (get) A patient cannot read another patient's profile. `auth.uid != patientId`
-     * @principle Restricts access to a user's own data tree, but allows consented access for healthcare providers.
-     */
-    match /patients/{patientId} {
-      allow get: if isOwner(patientId) || (isHealthcareProvider() && hasConsent(patientId));
-      allow list: if false;
-      allow create: if isOwner(patientId) && hasValidIdOnCreate(patientId);
-      allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
-      allow delete: if isOwner(patientId) && isExistingDoc();
-
-      /**
-       * @description Rules for a patient's consent documents.
-       * @path /patients/{patientId}/consents/{consentId}
-       * @allow (get) A patient can read their own consent documents. A healthcare provider can read it to verify consent.
-       * @allow (list) A patient can list their own consent documents.
-       * @allow (update) A patient can update their own consent status.
-       * @deny (create) A healthcare provider cannot create a consent document for a patient.
-       * @deny (update) A patient cannot modify another patient's consent.
-       * @principle Enforces strict document ownership for writes, but allows consented reads for verification.
-       */
-      match /consents/{consentId} {
-        allow get: if isOwner(patientId) || isHealthcareProvider();
-        allow list: if isOwner(patientId);
-        allow create: if isOwner(patientId) && request.resource.data.patientId == patientId;
-        allow update: if isOwner(patientId) && isExistingDoc() && request.resource.data.patientId == resource.data.patientId;
-        allow delete: if isOwner(patientId) && isExistingDoc();
-      }
-    }
-
-    /**
-     * @description Rules for healthcare provider profile documents.
-     * @path /healthcareProviders/{healthcareProviderId}
-     * @allow (get) A healthcare provider can read their own profile. `auth.uid == healthcareProviderId`
-     * @allow (create) A new healthcare provider can create their own profile document. `auth.uid == healthcareProviderId`
-     * @deny (list) No user can list all healthcare providers in the system.
-     * @deny (get) A healthcare provider cannot read another healthcare provider's profile. `auth.uid != healthcareProviderId`
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /healthcareProviders/{healthcareProviderId} {
-      allow get: if isOwner(healthcareProviderId);
-      allow list: if false;
-      allow create: if isOwner(healthcareProviderId) && hasValidIdOnCreate(healthcareProviderId);
-      allow update: if isOwner(healthcareProviderId) && isExistingDoc() && isIdImmutable();
-      allow delete: if isOwner(healthcareProviderId) && isExistingDoc();
-    }
-    
-    /**
-     * @description Rules for platform admin profile documents.
-     * @principle Only the owner can manage their profile.
-     */
-    match /platformAdmins/{adminId} {
-       allow read, write: if isOwner(adminId);
-    }
-    
-    /**
-     * @description Rules for institution admin profile documents.
-     * @principle Admins can manage their own profiles. Platform admins can view them.
-     */
-    match /institutionAdmins/{adminId} {
-      allow get: if isOwner(adminId) || isPlatformAdmin();
-      allow create, update, delete: if isOwner(adminId);
-    }
-    
-    /**
-     * @description Rules for healthcare institutions.
-     * @principle Platform admins have full control. Institution admins can manage their own institution.
-     */
+    // Platform Admins have full control over institutions.
+    // All other authenticated users can read the list of institutions.
     match /institutions/{institutionId} {
-        function isInstitutionAdminOfThisInstitution() {
-            return isInstitutionAdmin() && get(/databases/$(database)/documents/institutionAdmins/$(request.auth.uid)).data.institutionId == institutionId;
-        }
-
-        // Allow public read for seeding and client-side logic, but restrict writes.
-        allow read: if true;
-        allow create: if isPlatformAdmin();
-        allow update: if isPlatformAdmin() || isInstitutionAdminOfThisInstitution();
-        allow delete: if false; // Only logical deletes by changing status
+      allow read: if isSignedIn();
+      allow write: if isRole('platform_admin');
     }
 
-
-    /**
-     * @description Rules for aggregated patient health records. This path contains a subcollection of actual records.
-     * @path /healthRecords/{healthRecordId}
-     * @allow (none) Direct access to the parent document is generally not needed.
-     * @deny (list, create, update, delete) Direct client modification is forbidden.
-     * @principle Protects sensitive data by making it read-only for the owner and consented healthcare providers, and write-locked for clients.
-     */
-    match /healthRecords/{healthRecordId} {
-      // This document itself is not meant to be read directly. Rules are for the subcollection.
-      allow read, write: if false;
-
-      /**
-       * @description Rules for the individual medical events within a health record.
-       * @path /healthRecords/{healthRecordId}/records/{recordId}
-       * @allow (get, list) A patient can read their own history. A healthcare provider can read with consent.
-       * @deny (create, update, delete) All writes must go through a trusted backend.
-       */
-      match /records/{recordId} {
-        // healthRecordId is the same as the patientId
-        allow get, list: if isOwner(healthRecordId) || (isHealthcareProvider() && hasConsent(healthRecordId));
-        allow write: if false;
-      }
+    // Users can read and update their own profile.
+    // Institution Admins can manage users within their own institution.
+    // Platform Admins can manage any user.
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow create: if isSignedIn(); // Allow any authenticated user to create their user record on signup.
+      allow update: if isOwner(userId) 
+                      || (isRole('institution_admin') && belongsToInstitution(resource.data.institution_id))
+                      || isRole('platform_admin');
+      allow delete: if isRole('platform_admin') 
+                      || (isRole('institution_admin') && belongsToInstitution(resource.data.institution_id));
     }
 
-    /**
-     * @description Rules for the audit log of data access events.
-     * @path /accessLogs/{accessLogId}
-     * @allow (get) A patient or healthcare provider can read a log entry they are part of.
-     * @allow (create) A healthcare provider can create a log entry for an action they perform.
-     * @deny (list) Listing all access logs is forbidden to prevent data mining.
-     * @deny (update, delete) Log entries are immutable and cannot be changed or deleted.
-     * @principle Enforces an immutable, append-only audit trail.
-     */
-    match /accessLogs/{accessLogId} {
-      allow get: if isOwner(resource.data.patientId) || isOwner(resource.data.healthcareProviderId);
-      allow list: if false;
-      allow create: if isOwner(request.resource.data.healthcareProviderId);
-      allow update: if false;
-      allow delete: if false;
+    // Patients can read their own identity document.
+    // Healthcare providers can read any patient's identity for lookup purposes.
+    match /patients/{patientId} {
+      allow get: if isRole('patient') && isOwner(patientId) 
+                   || isRole('healthcare_provider');
+      allow list: if isRole('healthcare_provider'); // Allow providers to list patients for search.
+      allow write: if isRole('platform_admin'); // Only admins can seed patient data.
     }
 
-    /**
-     * @description Rules for lab reports.
-     * @path /labReports/{labReportId}
-     * @allow (none) All access is denied by default until a proper ownership model is defined.
-     * @deny (all) Direct client access is forbidden as there is no ownership field in the schema.
-     * @principle Enforces a secure-by-default posture for data with an undefined access pattern.
-     */
-    match /labReports/{labReportId} {
-      // CRITICAL: Cannot implement owner-only writes. The 'LabReport' entity is missing an 'ownerId' or 'patientId' field.
-      // Access must be brokered by a trusted backend (e.g., Cloud Function) until the schema is updated.
-      allow read, write: if false;
+    // Patients can manage their own consent.
+    // Healthcare providers can read consent documents to verify access.
+    match /consents/{consentId} {
+      allow get: if isRole('patient') && isOwner(resource.data.patient_id)
+                   || isRole('healthcare_provider');
+      allow list: if isRole('patient') && isOwner(request.query.patient_id);
+      allow write: if isRole('patient') && isOwner(request.resource.data.patient_id);
+    }
+    
+    // Patients can read their own records.
+    // Healthcare providers can read records if they have consent.
+    match /records/{recordId} {
+       allow get: if (isRole('patient') && isOwner(resource.data.patient_id))
+                    || (isRole('healthcare_provider') && hasConsent(resource.data.patient_id));
+       allow list: if false; // Unified records should not be listable directly.
+       allow write: if isRole('platform_admin'); // Only backend/admin can create unified records.
+    }
+
+    // Healthcare providers can create emergency access logs for their institution.
+    // The patient and the provider involved can read the log.
+    match /emergency_access_logs/{logId} {
+      allow create: if isRole('healthcare_provider') && belongsToInstitution(request.resource.data.institution_id);
+      allow get: if (isRole('patient') && isOwner(resource.data.patient_id))
+                   || (isRole('healthcare_provider') && isOwner(resource.data.healthcare_provider_id));
+      allow list, update, delete: if false; // Logs are immutable.
+    }
+
+    // Platform Admins have full control over API credentials.
+    match /api_credentials/{credentialId} {
+      allow read, write: if isRole('platform_admin');
     }
   }
 }
-
-    

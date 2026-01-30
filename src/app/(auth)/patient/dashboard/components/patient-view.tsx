@@ -1,51 +1,69 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import type { Patient, AccessLog, Consent, MedicalEvent } from "@/lib/types";
 import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, collection, setDoc, query, where } from "firebase/firestore";
-
+import { doc, collection, setDoc, query, where, getDocs } from "firebase/firestore";
+import type { User, Patient, Consent, HealthRecord, EmergencyAccessLog } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import MedicalTimeline from "@/components/dashboard/medical-timeline";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PatientView() {
-  const { user } = useUser();
+  const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
-  const patientRef = useMemoFirebase(() => user ? doc(firestore, "patients", user.uid) : null, [firestore, user]);
+  // The user object from useUser() is the auth user. We need their profile from /users.
+  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, "users", user.uid) : null, [firestore, user]);
+  const { data: userProfile, isLoading: isUserLoading } = useDoc<User>(userProfileRef);
+
+  // Once we have the user profile, we can get their patient_id (assuming it's the same as user_id for this demo)
+  const patientId = userProfile?.user_id;
+
+  const patientRef = useMemoFirebase(() => patientId ? doc(firestore, "patients", patientId) : null, [firestore, patientId]);
   const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientRef);
-
-  const consentRef = useMemoFirebase(() => user ? doc(firestore, `patients/${user.uid}/consents`, user.uid) : null, [firestore, user]);
-  const { data: consent, isLoading: isConsentLoading } = useDoc<Consent>(consentRef);
   
-  const healthRecordsRef = useMemoFirebase(() => user ? collection(firestore, `healthRecords/${user.uid}/records`) : null, [firestore, user]);
-  const { data: medicalHistory, isLoading: isHistoryLoading } = useCollection<MedicalEvent>(healthRecordsRef);
+  const consentQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `consents`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
+  const { data: consentData, isLoading: isConsentLoading } = useCollection<Consent>(consentQuery);
+  const consent = consentData?.[0]; // Get the first consent document
 
-  const accessLogsQuery = useMemoFirebase(() => user ? query(collection(firestore, `accessLogs`), where('patientId', '==', user.uid)) : null, [firestore, user]);
-  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<AccessLog>(accessLogsQuery)
+  const healthRecordsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `records`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
+  const { data: healthRecords, isLoading: isHistoryLoading } = useCollection<HealthRecord>(healthRecordsQuery);
 
+  const accessLogsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `emergency_access_logs`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
+  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<EmergencyAccessLog>(accessLogsQuery)
 
-  const handleConsentChange = (granted: boolean) => {
-    if (user && consentRef) {
-      const consentData: Consent = { patientId: user.uid, granted };
-      setDocumentNonBlocking(consentRef, consentData, { merge: true });
+  const handleConsentChange = async (granted: boolean) => {
+    if (patientId) {
+      // Find the existing consent document to update, or create a new one.
+      const consentColRef = collection(firestore, 'consents');
+      const q = query(consentColRef, where('patient_id', '==', patientId));
+      const snapshot = await getDocs(q);
+      
+      let consentDocRef;
+      if (snapshot.empty) {
+        // Create new consent doc if none exists
+        consentDocRef = doc(consentColRef);
+      } else {
+        // Update existing consent doc
+        consentDocRef = snapshot.docs[0].ref;
+      }
+      
+      const consentPayload = { 
+        consent_id: consentDocRef.id,
+        patient_id: patientId, 
+        granted,
+        last_updated: new Date().toISOString() 
+      };
+      setDocumentNonBlocking(consentDocRef, consentPayload, { merge: true });
     }
   };
 
-  if (isPatientLoading || isConsentLoading || isHistoryLoading || isLogsLoading) {
+  const isLoading = isAuthLoading || isUserLoading || isPatientLoading || isConsentLoading || isHistoryLoading || isLogsLoading;
+
+  if (isLoading) {
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
@@ -77,8 +95,8 @@ export function PatientView() {
     );
   }
 
-  if (!patient) {
-    return <div>Could not load patient data.</div>
+  if (!patient || !userProfile) {
+    return <div>Could not load patient data. Please sign up or try again.</div>
   }
 
   return (
@@ -92,7 +110,7 @@ export function PatientView() {
             <Image src={patient.avatarUrl} alt={patient.name} width={48} height={48} className="rounded-full border" />
             <div>
                 <p className="font-semibold">{patient.name}</p>
-                <p className="text-sm text-muted-foreground">ID: {patient.id}</p>
+                <p className="text-sm text-muted-foreground">ID: {patient.patient_id}</p>
             </div>
         </Card>
       </div>
@@ -104,8 +122,14 @@ export function PatientView() {
         </TabsList>
 
         <TabsContent value="record" className="mt-6">
-            <h2 className="text-2xl font-headline font-bold mb-4">Aggregated Medical Timeline</h2>
-            <MedicalTimeline events={medicalHistory || []} />
+            <h2 className="text-2xl font-headline font-bold mb-4">Aggregated Health Record</h2>
+             {healthRecords && healthRecords.length > 0 ? (
+                <pre className="bg-muted p-4 rounded-md text-sm overflow-auto">
+                  {JSON.stringify(healthRecords, null, 2)}
+                </pre>
+              ): (
+                <Card><CardContent className="pt-6">No health records found for this patient.</CardContent></Card>
+              )}
         </TabsContent>
         
         <TabsContent value="privacy" className="mt-6 space-y-8">
@@ -138,26 +162,26 @@ export function PatientView() {
           
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Data Access Logs</CardTitle>
+              <CardTitle className="font-headline">Emergency Data Access Logs</CardTitle>
               <CardDescription>
-                This log shows who has accessed your unified health record and when.
+                This log shows who has accessed your unified health record in an emergency and when.
               </CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                        <TableHead>Accessor</TableHead>
-                        <TableHead>Role</TableHead>
+                        <TableHead>Provider ID</TableHead>
+                        <TableHead>Institution ID</TableHead>
                         <TableHead>Date & Time</TableHead>
                         <TableHead>Reason</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {(accessLogs || []).map(log => (
-                            <TableRow key={log.id}>
-                                <TableCell className="font-medium">{log.accessorName}</TableCell>
-                                <TableCell>{log.accessorRole}</TableCell>
+                            <TableRow key={log.log_id}>
+                                <TableCell className="font-medium">{log.healthcare_provider_id}</TableCell>
+                                <TableCell>{log.institution_id}</TableCell>
                                 <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
                                 <TableCell>{log.reason}</TableCell>
                             </TableRow>
@@ -165,7 +189,7 @@ export function PatientView() {
                          {(!accessLogs || accessLogs.length === 0) && (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                    No access logs found.
+                                    No emergency access logs found.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -178,7 +202,3 @@ export function PatientView() {
     </div>
   );
 }
-
-    
-
-    

@@ -72,22 +72,21 @@ export function PlatformAdminView() {
         }
         return {
             total: institutions.length,
-            active: institutions.filter(i => i.status === 'active' || i.status === 'approved').length,
-            pending: institutions.filter(i => i.status === 'pending').length,
-            rejected: institutions.filter(i => i.status === 'rejected').length,
-            suspended: institutions.filter(i => i.status === 'suspended').length,
+            active: institutions.filter(i => i.status === 'ACTIVE').length,
+            pending: institutions.filter(i => i.status === 'PENDING').length,
+            rejected: institutions.filter(i => i.status === 'REJECTED').length,
+            suspended: institutions.filter(i => i.status === 'SUSPENDED').length,
         };
     }, [institutions]);
 
     const getStatusVariant = (status: Institution['status']): 'default' | 'secondary' | 'destructive' | 'outline' => {
         switch (status) {
-            case 'active':
-            case 'approved': 
+            case 'ACTIVE':
                 return 'default';
-            case 'pending': 
+            case 'PENDING': 
                 return 'secondary';
-            case 'rejected':
-            case 'suspended':
+            case 'REJECTED':
+            case 'SUSPENDED':
                 return 'destructive';
             default: 
                 return 'outline';
@@ -96,14 +95,13 @@ export function PlatformAdminView() {
     
     const getStatusIcon = (status: Institution['status']) => {
         switch (status) {
-            case 'active':
-            case 'approved':
+            case 'ACTIVE':
                 return <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />;
-            case 'pending': 
+            case 'PENDING': 
                 return <Clock className="mr-2 h-4 w-4 text-yellow-500" />;
-            case 'rejected': 
+            case 'REJECTED': 
                 return <XCircle className="mr-2 h-4 w-4 text-red-500" />;
-             case 'suspended': 
+             case 'SUSPENDED': 
                 return <Slash className="mr-2 h-4 w-4 text-gray-500" />;
             default: 
                 return null;
@@ -204,21 +202,19 @@ export function PlatformAdminView() {
                                     <TableRow>
                                         <TableHead>Institution</TableHead>
                                         <TableHead>Location</TableHead>
-                                        <TableHead>Type</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead><span className="sr-only">Actions</span></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {institutions?.map((inst) => (
-                                        <TableRow key={inst.id}>
+                                        <TableRow key={inst.institution_id}>
                                             <TableCell className="font-medium">{inst.name}</TableCell>
                                             <TableCell>{inst.city}, {inst.state}</TableCell>
-                                            <TableCell>{inst.type}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getStatusVariant(inst.status)} className="capitalize">
                                                     {getStatusIcon(inst.status)}
-                                                    {inst.status}
+                                                    {inst.status.toLowerCase()}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
@@ -232,17 +228,17 @@ export function PlatformAdminView() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
-                                                        {inst.status === 'pending' && (
+                                                        {inst.status === 'PENDING' && (
                                                             <>
-                                                                <DropdownMenuItem onClick={() => handleUpdateStatus(inst.id, 'active')}>Approve</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleUpdateStatus(inst.id, 'rejected')}>Reject</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleUpdateStatus(inst.institution_id, 'ACTIVE')}>Approve</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleUpdateStatus(inst.institution_id, 'REJECTED')}>Reject</DropdownMenuItem>
                                                             </>
                                                         )}
-                                                        {inst.status === 'active' && (
-                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(inst.id, 'suspended')}>Suspend</DropdownMenuItem>
+                                                        {inst.status === 'ACTIVE' && (
+                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(inst.institution_id, 'SUSPENDED')}>Suspend</DropdownMenuItem>
                                                         )}
-                                                        {inst.status === 'suspended' || inst.status === 'rejected' ? (
-                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(inst.id, 'active')}>Re-activate</DropdownMenuItem>
+                                                        {inst.status === 'SUSPENDED' || inst.status === 'REJECTED' ? (
+                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(inst.institution_id, 'ACTIVE')}>Re-activate</DropdownMenuItem>
                                                         ) : null}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -271,5 +267,3 @@ export function PlatformAdminView() {
         </div>
     );
 }
-
-    

@@ -2,7 +2,7 @@
 
 import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
 import { doc, collection } from 'firebase/firestore';
-import type { InstitutionAdmin, Institution } from "@/lib/types";
+import type { InstitutionAdmin as AdminProfile, Institution } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +12,10 @@ export default function InstitutionAdminDashboardPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
 
-    const adminDocRef = useMemoFirebase(() => user ? doc(firestore, 'institutionAdmins', user.uid) : null, [firestore, user]);
-    const { data: admin, isLoading: isAdminLoading } = useDoc<InstitutionAdmin>(adminDocRef);
+    const adminDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+    const { data: admin, isLoading: isAdminLoading } = useDoc<AdminProfile>(adminDocRef);
 
-    const institutionDocRef = useMemoFirebase(() => admin?.institutionId ? doc(firestore, 'institutions', admin.institutionId) : null, [firestore, admin]);
+    const institutionDocRef = useMemoFirebase(() => admin?.institution_id ? doc(firestore, 'institutions', admin.institution_id) : null, [firestore, admin]);
     const { data: institution, isLoading: isInstitutionLoading } = useDoc<Institution>(institutionDocRef);
     
     const isLoading = isUserLoading || isAdminLoading || isInstitutionLoading;
@@ -79,7 +79,7 @@ export default function InstitutionAdminDashboardPage() {
                                         <CardTitle className="text-base font-medium">Status</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <p className="text-2xl font-bold capitalize">{institution.status}</p>
+                                        <p className="text-2xl font-bold capitalize">{institution.status.toLowerCase()}</p>
                                     </CardContent>
                                 </Card>
                                 <Card>
@@ -92,10 +92,10 @@ export default function InstitutionAdminDashboardPage() {
                                 </Card>
                                  <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-base font-medium">Institution Type</CardTitle>
+                                        <CardTitle className="text-base font-medium">Institution ID</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <p className="text-lg">{institution.type}</p>
+                                        <p className="text-lg font-mono">{institution.institution_id}</p>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -151,5 +151,3 @@ export default function InstitutionAdminDashboardPage() {
         </div>
     );
 }
-
-    

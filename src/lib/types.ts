@@ -11,26 +11,35 @@ export type MedicalEvent = {
   source: 'Hospital A' | 'Hospital B';
 };
 
-export type Patient = {
-  id: string;
+// Generic User type for the /users collection
+export type User = {
+  user_id: string;
   name: string;
   email: string;
-  dateOfBirth: string;
+  role: 'patient' | 'healthcare_provider' | 'institution_admin' | 'platform_admin';
+  institution_id?: string; // Foreign key to /institutions
+  active: boolean;
   avatarUrl: string;
-  bloodGroup: string;
-  isTemporary?: boolean;
-  createdAt?: string;
-  createdByInstitution?: string;
 };
 
-export type HealthcareProvider = {
-  id: string;
+// Specific types for clarity, though they share the User structure
+export type PatientProfile = User & { role: 'patient' };
+export type HealthcareProvider = User & { role: 'healthcare_provider'; institution_id: string };
+export type InstitutionAdmin = User & { role: 'institution_admin'; institution_id: string };
+export type PlatformAdmin = User & { role: 'platform_admin' };
+
+
+// Patient identity collection /patients
+export type Patient = {
+  patient_id: string; // This might be a national health ID, etc.
   name: string;
-  email: string;
-  role: string;
-  institutionId: string;
+  dob: string;
+  gender: string;
+  primary_institution: string; // FK to /institutions
   avatarUrl: string;
+  // This doc does NOT contain clinical data
 };
+
 
 export type AccessLog = {
   id: string;
@@ -44,37 +53,47 @@ export type AccessLog = {
 };
 
 export type Consent = {
-    patientId: string;
+    consent_id: string;
+    patient_id: string;
     granted: boolean;
-}
+    last_updated: string;
+};
 
 export type Institution = {
-    id: string;
+    institution_id: string;
     name: string;
-    status: 'pending' | 'approved' | 'rejected' | 'active' | 'suspended';
     city: string;
     state: string;
-    type: 'Hospital' | 'Clinic' | 'Diagnostic' | 'PHC';
-    registrationId: string;
-    adminEmail: string;
-    adminUid?: string;
-    apiKey?: string;
+    status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
+    created_at: string;
+    apiKey?: string; // This would be managed by backend
 };
 
-export type InstitutionAdmin = {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string;
-    institutionId: string;
-    role: string;
+export type HealthRecord = {
+    record_id: string;
+    patient_id: string;
+    institution_id: string;
+    blood_group: string;
+    conditions: string[];
+    medications: string[];
+    allergies: string[];
+    lab_reports: string[];
+    last_updated: string;
 };
 
-export type PlatformAdmin = {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string;
+export type EmergencyAccessLog = {
+    log_id: string;
+    patient_id: string;
+    healthcare_provider_id: string;
+    institution_id: string;
+    reason: string;
+    timestamp: string;
 };
 
-    
+export type ApiCredential = {
+    credential_id: string;
+    institution_id: string;
+    api_key: string;
+    enabled: boolean;
+    created_at: string;
+};

@@ -1,56 +1,57 @@
 'use client';
 
-import React, { useMemo, type ReactNode, useEffect } from 'react';
-import { FirebaseProvider, useFirestore } from '@/firebase/provider';
+import React, { useMemo, type ReactNode, useEffect, useState } from 'react';
+import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
-import { collection, doc, getDocs, writeBatch, type Firestore } from 'firebase/firestore';
-import type { Institution } from '@/lib/types';
 
+function Seeder() {
+    const [isSeeding, setIsSeeding] = useState(false);
+    const [seedComplete, setSeedComplete] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-const institutionsToSeed: Omit<Institution, 'id'>[] = [
-  { name: 'AarogyaNova Hospital', city: 'Devpur', state: 'Dakshin Pradesh', type: 'Hospital', registrationId: 'DEO-HOS-001', adminEmail: 'admin@aarogyanova.demo', status: 'active', apiKey: 'key-aarogyanova-demo-01' },
-  { name: 'JeevanPath Medical Center', city: 'Shantipur', state: 'Madhav Pradesh', type: 'Hospital', registrationId: 'SHN-HOS-002', adminEmail: 'itadmin@jeevanpath.demo', status: 'active', apiKey: 'key-jeevanpath-demo-02' },
-  { name: 'SwasthiCare General Hospital', city: 'Nandigram', state: 'Aryavarta', type: 'Hospital', registrationId: 'NDG-HOS-003', adminEmail: 'admin@swasthicare.demo', status: 'active', apiKey: 'key-swasthicare-demo-03' },
-  { name: 'PranaSetu Health Institute', city: 'Suryanagar', state: 'Vardhan Pradesh', type: 'Clinic', registrationId: 'SYN-CLI-001', adminEmail: 'operations@pranasetu.demo', status: 'active', apiKey: 'key-pranasetu-demo-04' },
-  { name: 'ArogyaDeep Community Hospital', city: 'Deepgarh', state: 'Navbharat', type: 'Hospital', registrationId: 'DPG-HOS-004', adminEmail: 'admin@arogyadeep.demo', status: 'active', apiKey: 'key-arogyadeep-demo-05' },
-  { name: 'JeevanRekha Rural Health Centre', city: 'Gramsetu', state: 'Uttam Pradesh', type: 'PHC', registrationId: 'GRS-PHC-001', adminEmail: 'rhc.admin@jeevanrekha.demo', status: 'active', apiKey: 'key-jeevanrekha-demo-06' },
-  { name: 'SwasthyaKiran Diagnostic Labs', city: 'Kiranpur', state: 'Tejas Pradesh', type: 'Diagnostic', registrationId: 'KRN-LAB-001', adminEmail: 'labs.admin@swasthyakiran.demo', status: 'active', apiKey: 'key-swasthyakiran-demo-07' },
-  { name: 'PranaVeda Multispeciality Clinic', city: 'Vednagar', state: 'Sanjeevani Pradesh', type: 'Clinic', registrationId: 'VDN-CLI-002', adminEmail: 'admin@pranaveda.demo', status: 'active', apiKey: 'key-pranaveda-demo-08' },
-  { name: 'NavArogya City Hospital', city: 'Arogyapur', state: 'Samriddhi Pradesh', type: 'Hospital', registrationId: 'AGP-HOS-005', adminEmail: 'it@navarogya.demo', status: 'active', apiKey: 'key-navarogya-demo-09' },
-  { name: 'JeevanRaksha Emergency Hospital', city: 'Rakshapur', state: 'Suraksha Pradesh', type: 'Hospital', registrationId: 'RKP-HOS-006', adminEmail: 'emergency.admin@jeevanraksha.demo', status: 'active', apiKey: 'key-jeevanraksha-demo-10' },
-];
-
-function Seeder({ firestore }: { firestore: Firestore }) {
     useEffect(() => {
-        const seedDatabase = async (db: Firestore) => {
+        // Check local storage to see if seeding has been done
+        const hasSeeded = localStorage.getItem('db_seeded_v2');
+        if (hasSeeded) {
+            setSeedComplete(true);
+            return;
+        }
+
+        const seedDatabase = async () => {
+            setIsSeeding(true);
+            setError(null);
             try {
-                const institutionsRef = collection(db, 'institutions');
-                const snapshot = await getDocs(institutionsRef);
-                
-                // Only seed if the collection is empty.
-                if (snapshot.empty) {
-                    console.log("Seeding database with initial institutions...");
-                    const batch = writeBatch(db);
-                    
-                    institutionsToSeed.forEach(inst => {
-                        const docRef = doc(collection(db, 'institutions'));
-                        batch.set(docRef, { ...inst, id: docRef.id });
-                    });
-                    
-                    await batch.commit();
-                    console.log("Database seeded successfully with 10 institutions.");
+                const response = await fetch('/api/v1/seed', { method: 'POST' });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to seed database: ${response.statusText}`);
                 }
-            } catch (error) {
-                console.error("Error seeding database: ", error);
+                const result = await response.json();
+                console.log(result.message);
+                // Mark seeding as complete in local storage
+                localStorage.setItem('db_seeded_v2', 'true');
+                setSeedComplete(true);
+            } catch (err: any) {
+                console.error("Error seeding database:", err);
+                setError(err.message);
+            } finally {
+                setIsSeeding(false);
             }
         };
 
-        seedDatabase(firestore);
-  }, [firestore]);
+        seedDatabase();
+    }, []);
 
-  return null; // This component does not render anything.
+    // Optionally render seeding status to the UI for debugging
+    if (isSeeding) {
+        return <div style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(0,0,0,0.5)', color: 'white', padding: '10px', zIndex: 1000 }}>Seeding database...</div>;
+    }
+    if (error) {
+        return <div style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(255,0,0,0.7)', color: 'white', padding: '10px', zIndex: 1000 }}>Seeding Error: {error}</div>;
+    }
+
+    return null; // This component does not render anything in production
 }
-
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -58,9 +59,8 @@ interface FirebaseClientProviderProps {
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
     return initializeFirebase();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []); 
 
   return (
     <FirebaseProvider
@@ -68,7 +68,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
-      <Seeder firestore={firebaseServices.firestore} />
+      <Seeder />
       {children}
     </FirebaseProvider>
   );
