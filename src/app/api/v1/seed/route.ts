@@ -68,6 +68,15 @@ const apiCredentialsData = [
 
 export async function POST() {
     try {
+        // Check if adminDb is properly initialized
+        if (!adminDb) {
+            console.error('Firebase Admin DB not initialized');
+            return NextResponse.json({ 
+                error: 'Firebase Admin not configured. Database seeding unavailable.',
+                message: 'App will work with client-side Firebase only.'
+            }, { status: 503 });
+        }
+
         const markerDocRef = adminDb.collection('internal_meta').doc('seeding_v2');
         const markerDoc = await markerDocRef.get();
 
