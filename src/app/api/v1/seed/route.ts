@@ -93,7 +93,7 @@ export async function POST() {
         });
 
         consentsData.forEach(data => {
-            const ref = adminDb.collection('consents').doc(data.consent_id);
+            const ref = adminDb.collection('consents').doc(data.patient_id);
             batch.set(ref, data);
         });
 
