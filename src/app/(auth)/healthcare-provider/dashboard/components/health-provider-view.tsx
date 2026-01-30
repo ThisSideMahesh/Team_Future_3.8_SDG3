@@ -269,27 +269,22 @@ export function HealthcareProviderView() {
         </Tabs>
       )}
 
-      {/* Emergency Access Dialog */}
       <AlertDialog open={showEmergencyDialog} onOpenChange={setShowEmergencyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-700">
-              <AlertOctagon className="h-5 w-5" />
-              Emergency Access Warning
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p><strong>This is for life-threatening situations only.</strong></p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Only limited data will be shown (Blood group, Allergies, Chronic conditions)</li>
-                <li>This access will be logged and auditable</li>
-                <li>Misuse may result in disciplinary action</li>
+            <AlertDialogTitle className="text-red-700">Emergency Access Warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              <p><strong>For life-threatening situations only.</strong></p>
+              <ul className="list-disc list-inside space-y-1 text-sm mt-2">
+                <li>Limited data only</li>
+                <li>Access will be logged</li>
+                <li>Misuse may result in action</li>
               </ul>
-              <p className="text-sm font-semibold mt-3">Do you confirm this is an emergency?</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setShowEmergencyDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleEmergencyAccess}>Confirm Emergency Access</Button>
+            <Button variant="destructive" onClick={handleEmergencyAccess}>Confirm Emergency</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
