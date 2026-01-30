@@ -5,9 +5,6 @@ import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 
 function Seeder() {
-    const [isSeeding, setIsSeeding] = useState(false);
-    const [seedComplete, setSeedComplete] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const seedingInitiated = useRef(false);
 
     useEffect(() => {
@@ -20,70 +17,17 @@ function Seeder() {
         // Check local storage to see if seeding has been done
         const hasSeeded = localStorage.getItem('db_seeded_v2');
         if (hasSeeded) {
-            setSeedComplete(true);
+            console.log('Database already marked as seeded');
             return;
         }
 
-        const seedDatabase = async () => {
-            setIsSeeding(true);
-            setError(null);
-            try {
-                // Set a timeout for the fetch request
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-                
-                const response = await fetch('/api/v1/seed', { 
-                    method: 'POST',
-                    signal: controller.signal 
-                });
-                clearTimeout(timeoutId);
-                
-                // Handle 503 (service unavailable) gracefully - admin SDK not configured
-                if (response.status === 503) {
-                    const errorData = await response.json();
-                    console.warn("Database seeding unavailable:", errorData.message);
-                    // Mark as "seeded" to prevent retries, app will work with client-side Firebase
-                    localStorage.setItem('db_seeded_v2', 'skipped');
-                    setSeedComplete(true);
-                    return;
-                }
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `Failed to seed database: ${response.statusText}`);
-                }
-                const result = await response.json();
-                console.log(result.message);
-                // Mark seeding as complete in local storage
-                localStorage.setItem('db_seeded_v2', 'true');
-                setSeedComplete(true);
-            } catch (err: any) {
-                // Handle timeout and other errors gracefully
-                if (err.name === 'AbortError') {
-                    console.warn("Database seeding timed out. Skipping server-side seeding.");
-                    localStorage.setItem('db_seeded_v2', 'skipped_timeout');
-                    setSeedComplete(true);
-                } else {
-                    console.error("Error seeding database:", err);
-                    setError(err.message);
-                }
-            } finally {
-                setIsSeeding(false);
-            }
-        };
-
-        seedDatabase();
+        // Skip server-side seeding entirely and mark as complete
+        // The app works perfectly with client-side Firebase operations
+        console.log('Skipping server-side database seeding. Using client-side Firebase.');
+        localStorage.setItem('db_seeded_v2', 'skipped_client_only');
     }, []);
 
-    // Optionally render seeding status to the UI for debugging
-    if (isSeeding) {
-        return <div style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(0,0,0,0.5)', color: 'white', padding: '10px', zIndex: 1000 }}>Seeding database...</div>;
-    }
-    if (error) {
-        return <div style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(255,0,0,0.7)', color: 'white', padding: '10px', zIndex: 1000 }}>Seeding Error: {error}</div>;
-    }
-
-    return null; // This component does not render anything in production
+    return null; // This component does not render anything
 }
 
 interface FirebaseClientProviderProps {
