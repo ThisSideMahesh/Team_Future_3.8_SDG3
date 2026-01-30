@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, type ReactNode, useEffect, useState } from 'react';
+import React, { useMemo, type ReactNode, useEffect, useState, useRef } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 
@@ -8,8 +8,15 @@ function Seeder() {
     const [isSeeding, setIsSeeding] = useState(false);
     const [seedComplete, setSeedComplete] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const seedingInitiated = useRef(false);
 
     useEffect(() => {
+        // Prevent re-runs in React's Strict Mode by using a ref as a flag.
+        if (seedingInitiated.current) {
+            return;
+        }
+        seedingInitiated.current = true;
+
         // Check local storage to see if seeding has been done
         const hasSeeded = localStorage.getItem('db_seeded_v2');
         if (hasSeeded) {
