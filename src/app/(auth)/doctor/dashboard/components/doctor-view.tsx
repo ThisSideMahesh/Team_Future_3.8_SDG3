@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertCircle, Search, ShieldAlert, User } from 'lucide-react';
+import { AlertCircle, QrCode, Search, ShieldAlert, User } from 'lucide-react';
 import Image from 'next/image';
 
 import type { Patient, MedicalEvent } from '@/lib/types';
@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import MedicalTimeline from '@/components/dashboard/medical-timeline';
 import { Separator } from '@/components/ui/separator';
+import { QrScanner } from './qr-scanner';
+import { useToast } from '@/hooks/use-toast';
 
 const searchSchema = z.object({
   patientId: z.string().nonempty({ message: 'Patient ID is required.' }),
@@ -26,6 +28,8 @@ export function DoctorView() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
@@ -47,6 +51,15 @@ export function DoctorView() {
       setError('An error occurred while fetching patient data.');
     }
     setIsLoading(false);
+  };
+
+  const handleQrScan = (scannedId: string) => {
+    form.setValue('patientId', scannedId);
+    toast({
+        title: "QR Code Scanned",
+        description: `Patient ID ${scannedId} has been entered.`,
+    })
+    setIsScannerOpen(false);
   };
 
   const criticalAlerts = patient?.medicalHistory.filter(
@@ -80,15 +93,20 @@ export function DoctorView() {
                   </FormItem>
                 )}
               />
-              <div className="w-full sm:w-auto pt-0 sm:pt-8">
+              <div className="w-full sm:w-auto pt-0 sm:pt-8 flex items-center gap-2">
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? 'Searching...' : <><Search className="mr-2 h-4 w-4" /> Search</>}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)} className="w-full sm:w-auto">
+                   <QrCode className="mr-2 h-4 w-4" /> Scan QR
                 </Button>
               </div>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      <QrScanner open={isScannerOpen} onOpenChange={setIsScannerOpen} onScan={handleQrScan} />
 
       {error && (
         <Alert variant="destructive">
