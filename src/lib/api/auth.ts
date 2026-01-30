@@ -22,6 +22,7 @@ export function withApiAuth(handler: AuthenticatedApiHandler, allowedRoles: ApiR
     return async (req: NextRequest, context: { params: any }) => {
         const authHeader = req.headers.get('Authorization');
         const roleHeader = req.headers.get('X-User-Role') as ApiRole | null;
+        const institutionIdHeader = req.headers.get('X-Institution-ID');
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return NextResponse.json({ error: 'Unauthorized: Missing or invalid Authorization header. Expected: Bearer <API_KEY>' }, { status: 401 });
@@ -52,12 +53,26 @@ export function withApiAuth(handler: AuthenticatedApiHandler, allowedRoles: ApiR
             const credDoc = querySnapshot.docs[0];
             const apiCredential = credDoc.data() as ApiCredential;
 
+            // Validate X-Institution-ID matches the API key's institution if provided
+            if (institutionIdHeader && apiCredential.institution_id !== institutionIdHeader) {
+                return NextResponse.json({ 
+                    error: 'Forbidden: X-Institution-ID does not match the institution associated with this API key.' 
+                }, { status: 403 });
+            }
+
             const institutionDoc = await adminDb.collection('institutions').doc(apiCredential.institution_id).get();
             if (!institutionDoc.exists) {
                 return NextResponse.json({ error: 'Unauthorized: Institution associated with API key not found.' }, { status: 401 });
             }
 
             const institution = { id: institutionDoc.id, ...institutionDoc.data() } as Institution;
+
+            // Validate institution is ACTIVE
+            if (institution.status !== 'ACTIVE') {
+                return NextResponse.json({ 
+                    error: `Forbidden: Institution status is '${institution.status}'. Only ACTIVE institutions can access this API.` 
+                }, { status: 403 });
+            }
 
             // All checks passed. Call the actual API handler with the validated institution and role.
             return handler(req, { ...context, institution, role: roleHeader });
