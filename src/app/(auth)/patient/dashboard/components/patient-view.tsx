@@ -19,6 +19,7 @@ import { useState } from "react";
 export function PatientView() {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
+  const [showRevokeDialog, setShowRevokeDialog] = useState(false);
 
   // The user object from useUser() is the auth user. We need their profile from /users.
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, "users", user.uid) : null, [firestore, user]);
@@ -36,10 +37,40 @@ export function PatientView() {
   const healthRecordsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `records`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
   const { data: healthRecords, isLoading: isHistoryLoading } = useCollection<HealthRecord>(healthRecordsQuery);
 
-  const accessLogsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `emergency_access_logs`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
-  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<EmergencyAccessLog>(accessLogsQuery)
+  // Fetch all access logs (including emergency and normal)
+  const accessLogsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `access_logs`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
+  const { data: accessLogs, isLoading: isAccessLogsLoading } = useCollection<any>(accessLogsQuery);
+
+  const emergencyLogsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `emergency_access_logs`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
+  const {data: emergencyLogs, isLoading: isEmergencyLogsLoading} = useCollection<EmergencyAccessLog>(emergencyLogsQuery);
+
+  // Aggregate health records
+  const aggregatedData = healthRecords?.reduce((acc, record) => {
+    if (record.blood_group) acc.blood_group = record.blood_group;
+    record.conditions?.forEach(c => acc.conditions.add(c));
+    record.medications?.forEach(m => acc.medications.add(m));
+    record.allergies?.forEach(a => acc.allergies.add(a));
+    if (!acc.last_updated || record.last_updated > acc.last_updated) {
+      acc.last_updated = record.last_updated;
+    }
+    return acc;
+  }, {
+    blood_group: '',
+    conditions: new Set<string>(),
+    medications: new Set<string>(),
+    allergies: new Set<string>(),
+    last_updated: ''
+  });
 
   const handleConsentChange = (granted: boolean) => {
+    if (!granted) {
+      setShowRevokeDialog(true);
+    } else {
+      updateConsent(true);
+    }
+  };
+
+  const updateConsent = (granted: boolean) => {
     if (patientId) {
       const consentDocRef = doc(firestore, 'consents', patientId);
       
@@ -50,10 +81,11 @@ export function PatientView() {
         last_updated: new Date().toISOString() 
       };
       setDocumentNonBlocking(consentDocRef, consentPayload, { merge: true });
+      setShowRevokeDialog(false);
     }
   };
 
-  const isLoading = isAuthLoading || isUserLoading || isPatientLoading || isConsentLoading || isHistoryLoading || isLogsLoading;
+  const isLoading = isAuthLoading || isUserLoading || isPatientLoading || isConsentLoading || isHistoryLoading || isAccessLogsLoading || isEmergencyLogsLoading;
 
   if (isLoading) {
     return (
