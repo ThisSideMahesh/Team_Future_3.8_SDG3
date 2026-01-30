@@ -17,6 +17,19 @@
         "bloodGroup": {
           "type": "string",
           "description": "The patient's blood group."
+        },
+        "isTemporary": {
+          "type": "boolean",
+          "description": "Flag to identify temporary emergency records."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the patient record was created."
+        },
+        "createdByInstitution": {
+          "type": "string",
+          "description": "The ID of the institution that created a temporary record."
         }
       },
       "required": [
@@ -224,7 +237,8 @@
         "type": { "type": "string", "enum": ["Hospital", "Clinic", "Diagnostic", "PHC"] },
         "registrationId": { "type": "string" },
         "adminEmail": { "type": "string", "format": "email" },
-        "adminUid": { "type": "string" }
+        "adminUid": { "type": "string" },
+        "apiKey": { "type": "string", "description": "API key for institution-scoped API access."}
       },
       "required": ["id", "name", "status", "city", "state", "type", "adminEmail"]
     },
@@ -412,5 +426,3 @@
     "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, healthcare providers, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
   }
 }
-
-    

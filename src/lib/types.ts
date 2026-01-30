@@ -18,6 +18,9 @@ export type Patient = {
   dateOfBirth: string;
   avatarUrl: string;
   bloodGroup: string;
+  isTemporary?: boolean;
+  createdAt?: string;
+  createdByInstitution?: string;
 };
 
 export type HealthcareProvider = {
@@ -55,6 +58,7 @@ export type Institution = {
     registrationId: string;
     adminEmail: string;
     adminUid?: string;
+    apiKey?: string;
 };
 
 export type InstitutionAdmin = {
@@ -72,5 +76,3 @@ export type PlatformAdmin = {
     email: string;
     avatarUrl: string;
 };
-
-    
