@@ -96,7 +96,7 @@ export function PatientView() {
                     <Skeleton className="h-5 w-80" />
                 </div>
                 <Card className="flex items-center gap-4 p-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <Skeleton className="h-16 w-16 rounded-full" />
                     <div>
                         <Skeleton className="h-5 w-32 mb-1" />
                         <Skeleton className="h-4 w-24" />
@@ -104,15 +104,14 @@ export function PatientView() {
                 </Card>
             </div>
              <Tabs defaultValue="record">
-                <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-                    <TabsTrigger value="record">My Health Record</TabsTrigger>
-                    <TabsTrigger value="privacy">Consent & Privacy</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="record">Health Record</TabsTrigger>
+                    <TabsTrigger value="consent">Consent</TabsTrigger>
+                    <TabsTrigger value="logs">Access Logs</TabsTrigger>
+                    <TabsTrigger value="emergency">Emergency Info</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="record" className="mt-6">
-                    <Skeleton className="h-64 w-full" />
-                </TabsContent>
-                <TabsContent value="privacy" className="mt-6">
-                    <Skeleton className="h-48 w-full" />
+                <TabsContent value="record" className="mt-6">
+                    <Skeleton className="h-96 w-full" />
                 </TabsContent>
             </Tabs>
         </div>
@@ -120,8 +119,14 @@ export function PatientView() {
   }
 
   if (!patient || !userProfile) {
-    return <div>Could not load patient data. Please sign up or try again.</div>
+    return <div className="text-center py-12">Could not load patient data. Please sign up or try again.</div>
   }
+
+  // Combine all access logs
+  const allAccessLogs = [
+    ...(accessLogs || []).map(log => ({ ...log, type: 'normal' as const })),
+    ...(emergencyLogs || []).map(log => ({ ...log, type: 'emergency' as const }))
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <div className="space-y-8">
