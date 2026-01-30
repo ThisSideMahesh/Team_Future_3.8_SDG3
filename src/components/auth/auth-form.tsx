@@ -41,7 +41,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "", // Default email will be set in the placeholder
-      password: "password", // Pre-fill for demo purposes
+      password: "123456", // Pre-fill for demo purposes
       name: "",
     },
   });
