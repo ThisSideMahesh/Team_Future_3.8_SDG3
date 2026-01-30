@@ -29,6 +29,17 @@ function Seeder() {
             setError(null);
             try {
                 const response = await fetch('/api/v1/seed', { method: 'POST' });
+                
+                // Handle 503 (service unavailable) gracefully - admin SDK not configured
+                if (response.status === 503) {
+                    const errorData = await response.json();
+                    console.warn("Database seeding unavailable:", errorData.message);
+                    // Mark as "seeded" to prevent retries, app will work with client-side Firebase
+                    localStorage.setItem('db_seeded_v2', 'skipped');
+                    setSeedComplete(true);
+                    return;
+                }
+                
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `Failed to seed database: ${response.statusText}`);
