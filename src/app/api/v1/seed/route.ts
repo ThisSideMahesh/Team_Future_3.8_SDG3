@@ -49,6 +49,8 @@ const consentsData = [
 const recordsData = [
   { record_id: "REC_001", patient_id: "PAT_001", institution_id: "INST_001", blood_group: "O+", conditions: ["Hypertension"], medications: ["Amlodipine"], allergies: ["Penicillin"], lab_reports: ["BP: 150/95"], last_updated: "2026-01-26T14:00:00Z" },
   { record_id: "REC_002", patient_id: "PAT_002", institution_id: "INST_002", blood_group: "B+", conditions: ["Type 2 Diabetes"], medications: ["Metformin"], allergies: [], lab_reports: ["HbA1c: 7.8%"], last_updated: "2026-01-26T14:10:00Z" },
+  // Additional record for PAT_001 from Hospital B (INST_002) - for aggregation demo
+  { record_id: "REC_003", patient_id: "PAT_001", institution_id: "INST_002", blood_group: "O+", conditions: ["Type 2 Diabetes"], medications: ["Metformin"], allergies: ["Penicillin"], lab_reports: ["HbA1c: 6.5%"], last_updated: "2026-01-27T10:30:00Z" },
 ];
 
 const emergencyLogsData = [
