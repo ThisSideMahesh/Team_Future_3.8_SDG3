@@ -66,6 +66,8 @@ const apiCredentialsData = [
     { credential_id: "API_008", institution_id: "INST_008", api_key: "APIKEY_JEEVANRAKSHA_911", enabled: true, created_at: "2026-01-22T10:35:00Z" },
     { credential_id: "API_009", institution_id: "INST_009", api_key: "APIKEY_HOPE_118", enabled: false, created_at: "2026-01-22T10:40:00Z" },
     { credential_id: "API_010", institution_id: "INST_010", api_key: "APIKEY_WELLNESS_360", enabled: false, created_at: "2026-01-22T10:45:00Z" },
+    // Hospital C API credentials
+    { credential_id: "API_C_001", institution_id: "INST_C", api_key: "APIKEY_SWASTHYACARE_789", enabled: true, created_at: "2026-01-28T10:00:00Z" },
 ];
 
 export async function POST() {
