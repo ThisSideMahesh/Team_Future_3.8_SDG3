@@ -1,0 +1,302 @@
+{
+  "entities": {
+    "Patient": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Patient",
+      "type": "object",
+      "description": "Represents a patient in the SwasthyaSetu system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the patient entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The patient's full name."
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "The patient's blood group."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Doctor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Doctor",
+      "type": "object",
+      "description": "Represents a doctor in the SwasthyaSetu system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the doctor entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The doctor's full name."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "HealthRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HealthRecord",
+      "type": "object",
+      "description": "Represents the aggregated health record of a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the health record entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:1 HealthRecord)"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "List of medical conditions the patient has.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "medications": {
+          "type": "array",
+          "description": "List of medications the patient is taking.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allergies": {
+          "type": "array",
+          "description": "List of allergies the patient has.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labReports": {
+          "type": "array",
+          "description": "List of lab report identifiers associated with the patient.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "Timestamp of the last update to the health record.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "patientId"
+      ]
+    },
+    "Consent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Consent",
+      "type": "object",
+      "description": "Represents patient consent for data aggregation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the consent record."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:1 Consent)"
+        },
+        "granted": {
+          "type": "boolean",
+          "description": "Indicates whether the patient has granted consent."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "granted"
+      ]
+    },
+    "AccessLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AccessLog",
+      "type": "object",
+      "description": "Represents a log entry for data access.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the access log entry."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N AccessLog)"
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Reference to Doctor. (Relationship: Doctor 1:N AccessLog)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the data was accessed.",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for accessing the data."
+        },
+        "emergencyAccess": {
+          "type": "boolean",
+          "description": "Indicates whether the data was accessed in emergency mode."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "doctorId",
+        "timestamp",
+        "reason"
+      ]
+    },
+    "LabReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LabReport",
+      "type": "object",
+      "description": "Represents a lab report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the lab report."
+        },
+        "reportName": {
+          "type": "string",
+          "description": "Name of the lab report."
+        },
+        "reportData": {
+          "type": "string",
+          "description": "The data contained within the report"
+        }
+      },
+      "required": [
+        "id",
+        "reportName",
+        "reportData"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/patients/{patientId}",
+        "definition": {
+          "entityName": "Patient",
+          "schema": {
+            "$ref": "#/backend/entities/Patient"
+          },
+          "description": "Stores patient profile information. Patient ID is used as the document ID.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/doctors/{doctorId}",
+        "definition": {
+          "entityName": "Doctor",
+          "schema": {
+            "$ref": "#/backend/entities/Doctor"
+          },
+          "description": "Stores doctor profile information. Doctor ID is used as the document ID.",
+          "params": [
+            {
+              "name": "doctorId",
+              "description": "The unique identifier for the doctor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/healthRecords/{healthRecordId}",
+        "definition": {
+          "entityName": "HealthRecord",
+          "schema": {
+            "$ref": "#/backend/entities/HealthRecord"
+          },
+          "description": "Stores aggregated health records. Health Record ID is used as the document ID. Includes patientId for reverse lookup.",
+          "params": [
+            {
+              "name": "healthRecordId",
+              "description": "The unique identifier for the health record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/patients/{patientId}/consents/{consentId}",
+        "definition": {
+          "entityName": "Consent",
+          "schema": {
+            "$ref": "#/backend/entities/Consent"
+          },
+          "description": "Stores patient consent information. Includes patientId as part of the path. Consent ID is auto-generated. This structure eliminates the need to `get()` the patient document to check consent, enabling atomic operations.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            },
+            {
+              "name": "consentId",
+              "description": "The unique identifier for the consent document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/accessLogs/{accessLogId}",
+        "definition": {
+          "entityName": "AccessLog",
+          "schema": {
+            "$ref": "#/backend/entities/AccessLog"
+          },
+          "description": "Stores logs of data access. Includes patientId and doctorId. Access Log ID is auto-generated.",
+          "params": [
+            {
+              "name": "accessLogId",
+              "description": "The unique identifier for the access log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/labReports/{labReportId}",
+        "definition": {
+          "entityName": "LabReport",
+          "schema": {
+            "$ref": "#/backend/entities/LabReport"
+          },
+          "description": "Stores lab reports.  LabReport ID is used as the document ID.",
+          "params": [
+            {
+              "name": "labReportId",
+              "description": "The unique identifier for the lab report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, doctors, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
+  }
+}
