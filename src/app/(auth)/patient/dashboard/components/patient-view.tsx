@@ -25,9 +25,8 @@ export function PatientView() {
   const patientRef = useMemoFirebase(() => patientId ? doc(firestore, "patients", patientId) : null, [firestore, patientId]);
   const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientRef);
   
-  const consentQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `consents`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
-  const { data: consentData, isLoading: isConsentLoading } = useCollection<Consent>(consentQuery);
-  const consent = consentData?.[0]; // Get the first consent document
+  const consentRef = useMemoFirebase(() => patientId ? doc(firestore, "consents", patientId) : null, [firestore, patientId]);
+  const { data: consent, isLoading: isConsentLoading } = useDoc<Consent>(consentRef);
 
   const healthRecordsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `records`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
   const { data: healthRecords, isLoading: isHistoryLoading } = useCollection<HealthRecord>(healthRecordsQuery);
@@ -35,24 +34,12 @@ export function PatientView() {
   const accessLogsQuery = useMemoFirebase(() => patientId ? query(collection(firestore, `emergency_access_logs`), where('patient_id', '==', patientId)) : null, [firestore, patientId]);
   const {data: accessLogs, isLoading: isLogsLoading} = useCollection<EmergencyAccessLog>(accessLogsQuery)
 
-  const handleConsentChange = async (granted: boolean) => {
+  const handleConsentChange = (granted: boolean) => {
     if (patientId) {
-      // Find the existing consent document to update, or create a new one.
-      const consentColRef = collection(firestore, 'consents');
-      const q = query(consentColRef, where('patient_id', '==', patientId));
-      const snapshot = await getDocs(q);
-      
-      let consentDocRef;
-      if (snapshot.empty) {
-        // Create new consent doc if none exists
-        consentDocRef = doc(consentColRef);
-      } else {
-        // Update existing consent doc
-        consentDocRef = snapshot.docs[0].ref;
-      }
+      const consentDocRef = doc(firestore, 'consents', patientId);
       
       const consentPayload = { 
-        consent_id: consentDocRef.id,
+        consent_id: patientId,
         patient_id: patientId, 
         granted,
         last_updated: new Date().toISOString() 
