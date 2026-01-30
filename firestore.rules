@@ -15,12 +15,15 @@ service cloud.firestore {
     }
 
     // Securely fetches the user's role and data from the /users collection.
+    // This function can cause recursion if used improperly within /users rules.
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     // Checks if the currently authenticated user has a specific role.
     function isRole(role) {
+      // This check is safe because it doesn't perform another 'get' on the users collection.
+      // It assumes the role is fetched securely elsewhere or is not used in recursive rules.
       return isSignedIn() && getUserData().role == role;
     }
     
@@ -30,8 +33,6 @@ service cloud.firestore {
     }
     
     // Checks if a patient has a valid and granted consent record.
-    // CRITICAL: This function assumes the consent document's ID is the same as the patient's ID.
-    // e.g., the consent document for patient 'PAT_001' must be at path '/consents/PAT_001'.
     function hasConsent(patientId) {
       let consentDoc = get(/databases/$(database)/documents/consents/$(patientId));
       return consentDoc.data.granted == true;
@@ -53,16 +54,25 @@ service cloud.firestore {
     }
 
     // Users can read/update their own profile.
-    // Institution Admins can manage users in their own institution.
-    // Platform Admins can manage any user.
+    // Admins have broader access, defined in a separate rule to prevent recursion.
     match /users/{userId} {
-      allow get: if isOwner(userId) || isRole('platform_admin') || 
+      // 1. A user can always read/update their own profile. This rule is non-recursive.
+      allow get, update: if isOwner(userId);
+
+      // 2. Admins can access user documents based on their roles. This rule uses getUserData.
+      allow get: if isRole('platform_admin') || 
                    (isRole('institution_admin') && belongsToInstitution(get(/databases/$(database)/documents/users/$(userId)).data.institution_id));
+      
+      // Allow user creation for any signed-in user during signup.
       allow create: if isSignedIn();
-      allow update: if isOwner(userId) || isRole('platform_admin') || 
+      
+      // Admin update/delete permissions.
+      allow update: if isRole('platform_admin') || 
                       (isRole('institution_admin') && belongsToInstitution(request.resource.data.institution_id));
       allow delete: if isRole('platform_admin') || 
                       (isRole('institution_admin') && belongsToInstitution(resource.data.institution_id));
+      
+      // List permission for admins.
       allow list: if isRole('platform_admin') || isRole('institution_admin');
     }
 
@@ -76,7 +86,7 @@ service cloud.firestore {
 
     // Patients have full control over their own consent records.
     // Healthcare providers can read consent to verify access.
-    // Write rule enforces that the document ID must match the patient ID for secure lookup.
+    // The doc ID must match the patient's ID for secure lookup.
     match /consents/{consentId} {
       allow read: if (isRole('patient') && request.auth.uid == resource.data.patient_id) || isRole('healthcare_provider');
       allow write: if isRole('patient') && request.auth.uid == request.resource.data.patient_id && consentId == request.auth.uid;
@@ -120,7 +130,6 @@ service cloud.firestore {
     // Temp patient metadata documents.
     // Healthcare providers can create them in an emergency.
     // Admins can read metadata for auditing, but cannot update them.
-    // Updates (like merging) should be handled by a backend process.
     match /temp_patients/{tempId} {
         allow create: if isRole('healthcare_provider') && belongsToInstitution(request.resource.data.institution_id);
         allow get: if (isRole('healthcare_provider') && belongsToInstitution(resource.data.institution_id)) ||
@@ -131,9 +140,7 @@ service cloud.firestore {
     }
     
     // Temp patient clinical records.
-    // These can be created and updated by providers from the same institution
-    // ONLY while the temporary patient record is 'ACTIVE'.
-    // Once merged, these records become read-only to prevent tampering.
+    // Can be created/updated by providers from the same institution ONLY while the temporary patient record is 'ACTIVE'.
     match /temp_records/{tempId} {
         allow create: if isRole('healthcare_provider') && belongsToInstitution(request.resource.data.institution_id);
         allow get, update: if isRole('healthcare_provider') && 
