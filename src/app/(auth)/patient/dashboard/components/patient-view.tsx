@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import type { Patient, AccessLog } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Patient, AccessLog, Consent, MedicalEvent } from "@/lib/types";
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, collection, setDoc } from "firebase/firestore";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -17,14 +18,68 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MedicalTimeline from "@/components/dashboard/medical-timeline";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type PatientViewProps = {
-  patient: Patient;
-  accessLogs: AccessLog[];
-};
+export function PatientView() {
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-export function PatientView({ patient, accessLogs }: PatientViewProps) {
-  const [consent, setConsent] = useState(true);
+  const patientRef = useMemoFirebase(() => user ? doc(firestore, "patients", user.uid) : null, [firestore, user]);
+  const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientRef);
+
+  const consentRef = useMemoFirebase(() => user ? doc(firestore, `patients/${user.uid}/consents`, user.uid) : null, [firestore, user]);
+  const { data: consent, isLoading: isConsentLoading } = useDoc<Consent>(consentRef);
+  
+  const healthRecordsRef = useMemoFirebase(() => user ? collection(firestore, `healthRecords/${user.uid}/records`) : null, [firestore, user]);
+  const { data: medicalHistory, isLoading: isHistoryLoading } = useCollection<MedicalEvent>(healthRecordsRef);
+
+  const accessLogsRef = useMemoFirebase(() => user ? collection(firestore, `accessLogs`) : null, [firestore, user]);
+  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<AccessLog>(accessLogsRef)
+
+
+  const handleConsentChange = (granted: boolean) => {
+    if (user && consentRef) {
+      const consentData: Consent = { patientId: user.uid, granted };
+      setDocumentNonBlocking(consentRef, consentData, { merge: true });
+    }
+  };
+
+  if (isPatientLoading || isConsentLoading || isHistoryLoading || isLogsLoading) {
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
+                <div>
+                    <Skeleton className="h-9 w-64 mb-2" />
+                    <Skeleton className="h-5 w-80" />
+                </div>
+                <Card className="flex items-center gap-4 p-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div>
+                        <Skeleton className="h-5 w-32 mb-1" />
+                        <Skeleton className="h-4 w-24" />
+                    </div>
+                </Card>
+            </div>
+             <Tabs defaultValue="record">
+                <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+                    <TabsTrigger value="record">My Health Record</TabsTrigger>
+                    <TabsTrigger value="privacy">Consent & Privacy</TabsTrigger>
+                </TabsList>
+                 <TabsContent value="record" className="mt-6">
+                    <Skeleton className="h-64 w-full" />
+                </TabsContent>
+                <TabsContent value="privacy" className="mt-6">
+                    <Skeleton className="h-48 w-full" />
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
+  }
+
+  if (!patient) {
+    return <div>Could not load patient data.</div>
+  }
 
   return (
     <div className="space-y-8">
@@ -50,7 +105,7 @@ export function PatientView({ patient, accessLogs }: PatientViewProps) {
 
         <TabsContent value="record" className="mt-6">
             <h2 className="text-2xl font-headline font-bold mb-4">Aggregated Medical Timeline</h2>
-            <MedicalTimeline events={patient.medicalHistory} />
+            <MedicalTimeline events={medicalHistory || []} />
         </TabsContent>
         
         <TabsContent value="privacy" className="mt-6 space-y-8">
@@ -73,8 +128,8 @@ export function PatientView({ patient, accessLogs }: PatientViewProps) {
                 </div>
                 <Switch
                   id="consent-switch"
-                  checked={consent}
-                  onCheckedChange={setConsent}
+                  checked={consent?.granted}
+                  onCheckedChange={handleConsentChange}
                   aria-label="Toggle data aggregation consent"
                 />
               </div>
@@ -98,7 +153,7 @@ export function PatientView({ patient, accessLogs }: PatientViewProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {accessLogs.map(log => (
+                        {(accessLogs || []).map(log => (
                             <TableRow key={log.id}>
                                 <TableCell className="font-medium">{log.accessorName}</TableCell>
                                 <TableCell>{log.accessorRole}</TableCell>

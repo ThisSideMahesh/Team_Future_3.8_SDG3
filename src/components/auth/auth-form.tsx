@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight } from "lucide-react";
+import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +31,7 @@ import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  id: z.string().min(1, { message: "ID is required." }),
+  email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
@@ -43,45 +44,51 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: userType === 'doctor' ? 'DOC98765' : 'PAT12345',
+      email: userType === 'doctor' ? 'dr.verma@example.com' : 'rohan.sharma@example.com',
       password: "password",
     },
   });
 
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        router.push(`/${userType}/dashboard`);
+    }
+  }, [user, isUserLoading, router, userType]);
+
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    // Mock authentication
+    if (isLogin) {
+        initiateEmailSignIn(auth, values.email, values.password);
+    } else {
+        initiateEmailSignUp(auth, values.email, values.password);
+    }
+    // The useEffect hook will handle navigation on successful login.
+    // We can add a timeout to handle login errors, as the non-blocking
+    // functions don't return promises we can catch here.
     setTimeout(() => {
-        const validDoctorId = "DOC98765";
-        const validPatientId = "PAT12345";
-        const validPassword = "password";
-
-        const isValid = userType === 'doctor' 
-            ? values.id === validDoctorId && values.password === validPassword
-            : values.id === validPatientId && values.password === validPassword;
-
-        if (isValid) {
-            router.push(`/${userType}/dashboard`);
-        } else {
+        setIsLoading(false);
+        if (!auth.currentUser) {
             toast({
                 title: "Authentication Failed",
-                description: "Invalid ID or password. Please try again.",
+                description: "Invalid credentials or user does not exist. Please try again.",
                 variant: "destructive"
-            })
+            });
         }
-      setIsLoading(false);
-    }, 1000);
+    }, 2000);
   };
 
   const title = isLogin ? "Login" : "Sign Up";
   const description = `Enter your details to ${isLogin ? "access your account" : "create an account"}.`;
   const buttonText = isLogin ? "Login" : "Sign Up";
   const toggleText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
-  const idLabel = userType === "doctor" ? "Doctor ID" : "Patient ID";
+  const idLabel = "Email";
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -98,7 +105,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="id"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{idLabel}</FormLabel>
@@ -122,9 +129,9 @@ export default function AuthForm({ userType }: AuthFormProps) {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Processing...' : buttonText}
-                {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+              <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
+                {isLoading || isUserLoading ? 'Processing...' : buttonText}
+                {!isLoading && !isUserLoading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
           </Form>

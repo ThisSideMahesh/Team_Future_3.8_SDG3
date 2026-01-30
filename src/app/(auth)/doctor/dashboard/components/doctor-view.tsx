@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertCircle, QrCode, Search, ShieldAlert, User } from 'lucide-react';
+import { AlertCircle, QrCode, Search, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
 
 import type { Patient, MedicalEvent } from '@/lib/types';
-import { getPatientById } from '@/lib/data';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,38 +20,35 @@ import MedicalTimeline from '@/components/dashboard/medical-timeline';
 import { Separator } from '@/components/ui/separator';
 import { QrScanner } from './qr-scanner';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const searchSchema = z.object({
   patientId: z.string().nonempty({ message: 'Patient ID is required.' }),
 });
 
 export function DoctorView() {
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [searchedPatientId, setSearchedPatientId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
-    defaultValues: { patientId: 'PAT12345' },
+    defaultValues: { patientId: '' },
   });
 
+  const patientRef = useMemoFirebase(() => searchedPatientId ? doc(firestore, 'patients', searchedPatientId) : null, [firestore, searchedPatientId]);
+  const { data: patient, isLoading: isPatientLoading, error: patientError } = useDoc<Patient>(patientRef);
+  
+  const healthRecordsRef = useMemoFirebase(() => searchedPatientId ? collection(firestore, `healthRecords/${searchedPatientId}/records`) : null, [firestore, searchedPatientId]);
+  const { data: medicalHistory, isLoading: isHistoryLoading } = useCollection<MedicalEvent>(healthRecordsRef);
+
+
   const onSubmit = async (data: z.infer<typeof searchSchema>) => {
-    setIsLoading(true);
-    setPatient(null);
+    setSearchedPatientId(null);
     setError(null);
-    try {
-      const foundPatient = await getPatientById(data.patientId);
-      if (foundPatient) {
-        setPatient(foundPatient);
-      } else {
-        setError('Patient not found. Please check the ID and try again.');
-      }
-    } catch (err) {
-      setError('An error occurred while fetching patient data.');
-    }
-    setIsLoading(false);
+    setSearchedPatientId(data.patientId);
   };
 
   const handleQrScan = (scannedId: string) => {
@@ -60,9 +58,12 @@ export function DoctorView() {
         description: `Patient ID ${scannedId} has been entered.`,
     })
     setIsScannerOpen(false);
+    onSubmit({ patientId: scannedId });
   };
+  
+  const isLoading = isPatientLoading || isHistoryLoading;
 
-  const criticalAlerts = patient?.medicalHistory.filter(
+  const criticalAlerts = medicalHistory?.filter(
     (event) => event.type === 'Allergy' || event.type === 'Chronic Condition'
   ) || [];
 
@@ -87,7 +88,7 @@ export function DoctorView() {
                   <FormItem className="w-full sm:w-auto flex-grow">
                     <FormLabel>Patient ID</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., PAT12345" {...field} />
+                      <Input placeholder="e.g., k2Rz3...sN4P1" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -107,16 +108,20 @@ export function DoctorView() {
       </Card>
 
       <QrScanner open={isScannerOpen} onOpenChange={setIsScannerOpen} onScan={handleQrScan} />
-
-      {error && (
+      
+      { (patientError || (searchedPatientId && !isLoading && !patient)) && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {patientError ? `Permission Denied or ${patientError.message}` : "Patient not found. Please check the ID and try again."}
+          </AlertDescription>
         </Alert>
       )}
 
-      {patient && (
+      {isLoading && <Skeleton className="h-96 w-full" />}
+
+      {patient && !isLoading && (
         <div className="space-y-8">
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4 space-y-0">
@@ -149,7 +154,7 @@ export function DoctorView() {
           
             <div>
               <h2 className="text-2xl font-headline font-bold mb-4">Aggregated Medical Timeline</h2>
-              <MedicalTimeline events={patient.medicalHistory} />
+              <MedicalTimeline events={medicalHistory || []} />
             </div>
         </div>
       )}

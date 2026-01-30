@@ -17,7 +17,7 @@ export type Patient = {
   email: string;
   dateOfBirth: string;
   avatarUrl: string;
-  medicalHistory: MedicalEvent[];
+  bloodGroup: string;
 };
 
 export type Doctor = {
@@ -35,3 +35,8 @@ export type AccessLog = {
   date: string;
   action: 'Viewed Record';
 };
+
+export type Consent = {
+    patientId: string;
+    granted: boolean;
+}
