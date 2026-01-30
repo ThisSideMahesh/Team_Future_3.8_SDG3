@@ -46,7 +46,6 @@ export function HealthcareProviderView() {
 
   const handleSearch = () => {
     if (!patientId.trim()) return;
-    // Mock: In real app, this would call API
     setSearchedPatient(MOCK_PATIENT_DATA);
     setEmergencyAccess(false);
   };
