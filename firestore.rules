@@ -195,8 +195,8 @@ service cloud.firestore {
             return isInstitutionAdmin() && get(/databases/$(database)/documents/institutionAdmins/$(request.auth.uid)).data.institutionId == institutionId;
         }
 
-        allow get: if isPlatformAdmin() || isInstitutionAdminOfThisInstitution();
-        allow list: if isPlatformAdmin();
+        // Allow public read for seeding and client-side logic, but restrict writes.
+        allow read: if true;
         allow create: if isPlatformAdmin();
         allow update: if isPlatformAdmin() || isInstitutionAdminOfThisInstitution();
         allow delete: if false; // Only logical deletes by changing status
