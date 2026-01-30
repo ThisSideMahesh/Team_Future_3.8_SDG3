@@ -64,24 +64,44 @@ export default function AuthForm({ userType }: AuthFormProps) {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    if (isLogin) {
-        initiateEmailSignIn(auth, values.email, values.password);
-    } else {
-        initiateEmailSignUp(auth, values.email, values.password);
-    }
-    // The useEffect hook will handle navigation on successful login.
-    // We can add a timeout to handle login errors, as the non-blocking
-    // functions don't return promises we can catch here.
-    setTimeout(() => {
-        setIsLoading(false);
-        if (!auth.currentUser) {
-            toast({
-                title: "Authentication Failed",
-                description: "Invalid credentials or user does not exist. Please try again.",
-                variant: "destructive"
-            });
+
+    const authPromise = isLogin
+        ? initiateEmailSignIn(auth, values.email, values.password)
+        : initiateEmailSignUp(auth, values.email, values.password);
+
+    // A successful login is handled by the onAuthStateChanged listener
+    // which will update the `user` from the `useUser` hook, triggering
+    // the useEffect to redirect. We only need to handle failures here.
+    authPromise
+      .catch((error) => {
+        let description = "An unknown authentication error occurred.";
+        if (error.code) {
+          switch (error.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+              description = "Invalid credentials. Please check your email and password.";
+              break;
+            case 'auth/email-already-in-use':
+              description = "An account with this email is already in use.";
+              break;
+            case 'auth/weak-password':
+              description = "The password is too weak. It must be at least 6 characters long.";
+              break;
+            default:
+              description = "An error occurred. Please try again.";
+              break;
+          }
         }
-    }, 2000);
+        toast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: description,
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const title = isLogin ? "Login" : "Sign Up";
