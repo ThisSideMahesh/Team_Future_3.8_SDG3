@@ -5,10 +5,10 @@
  * This ruleset enforces a strict, patient-centric security model where consent is paramount.
  * The default posture is "deny all," with access granted explicitly based on user roles and
  * data ownership. Patients have ultimate control over their personal data and consent settings.
- * Health Providers can only access patient data when permitted, and all such access is logged for auditing.
+ * Healthcare Providers can only access patient data when permitted, and all such access is logged for auditing.
  *
  * Data Structure:
- * The data is organized into top-level collections for primary entities: `patients`, `healthProviders`,
+ * The data is organized into top-level collections for primary entities: `patients`, `healthcareProviders`,
  * `healthRecords`, `accessLogs`, and `labReports`. This segregation allows for distinct and granular
  * security rules per entity. Patient-specific data that they directly control, such as consent,
  * is stored in a subcollection (`/patients/{patientId}/consents`) to leverage path-based
@@ -16,10 +16,10 @@
  *
  * Key Security Decisions:
  * - Default Deny: All operations are denied unless an `allow` rule explicitly permits them.
- * - Strict Ownership: Users (patients and health providers) can only access and manage their own
- *   profile documents (`/patients/{userId}` or `/healthProviders/{userId}`).
+ * - Strict Ownership: Users (patients and healthcare providers) can only access and manage their own
+ *   profile documents (`/patients/{userId}` or `/healthcareProviders/{userId}`).
  * - No Public Listing: To prevent data scraping and protect user privacy, listing documents
- *   in top-level collections like `patients` and `healthProviders` is disabled.
+ *   in top-level collections like `patients` and `healthcareProviders` is disabled.
  * - Immutable Logs: The `accessLogs` collection is append-only. Once a log is created,
  *   it cannot be modified or deleted, ensuring a secure audit trail.
  * - Backend-Managed Records: Health records are considered sensitive and are managed exclusively
@@ -30,7 +30,7 @@
  * To ensure fast and secure authorization checks, this ruleset relies on denormalized data.
  * - `healthRecords` documents contain a `patientId` field, allowing rules to verify patient
  *   ownership without performing extra reads.
- * - `accessLogs` documents contain both a `patientId` and a `healthProviderId`, allowing both parties
+ * - `accessLogs` documents contain both a `patientId` and a `healthcareProviderId`, allowing both parties
  *   to view a relevant log entry and enabling rules to verify the creator of the log.
  * This approach avoids slow and costly `get()` calls within rule evaluations where possible, but they
  * are necessary for checking cross-document state like consent.
@@ -65,10 +65,10 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the authenticated user is a health provider by verifying their profile document.
+     * Checks if the authenticated user is a healthcare provider by verifying their profile document.
      */
-    function isHealthProvider() {
-      return isSignedIn() && exists(/databases/$(database)/documents/healthProviders/$(request.auth.uid));
+    function isHealthcareProvider() {
+      return isSignedIn() && exists(/databases/$(database)/documents/healthcareProviders/$(request.auth.uid));
     }
     
     function isInstitutionAdmin() {
@@ -82,7 +82,7 @@ service cloud.firestore {
     /**
      * Checks if a patient has granted consent for data aggregation.
      * Assumes the consent document ID is the same as the patient's UID for predictability.
-     * CRITICAL: This function performs a `get()`, which requires the calling user (the Health Provider)
+     * CRITICAL: This function performs a `get()`, which requires the calling user (the Healthcare Provider)
      * to have read access to the target consent document.
      */
     function hasConsent(patientId) {
@@ -120,14 +120,14 @@ service cloud.firestore {
     /**
      * @description Rules for patient profile documents.
      * @path /patients/{patientId}
-     * @allow (get) A patient can read their own profile. A health provider can read a patient's profile if consent is granted.
+     * @allow (get) A patient can read their own profile. A healthcare provider can read a patient's profile if consent is granted.
      * @allow (create) A new patient can create their own profile document. `auth.uid == patientId`
      * @deny (list) No user can list all patients in the system.
      * @deny (get) A patient cannot read another patient's profile. `auth.uid != patientId`
-     * @principle Restricts access to a user's own data tree, but allows consented access for health providers.
+     * @principle Restricts access to a user's own data tree, but allows consented access for healthcare providers.
      */
     match /patients/{patientId} {
-      allow get: if isOwner(patientId) || (isHealthProvider() && hasConsent(patientId));
+      allow get: if isOwner(patientId) || (isHealthcareProvider() && hasConsent(patientId));
       allow list: if false;
       allow create: if isOwner(patientId) && hasValidIdOnCreate(patientId);
       allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
@@ -136,15 +136,15 @@ service cloud.firestore {
       /**
        * @description Rules for a patient's consent documents.
        * @path /patients/{patientId}/consents/{consentId}
-       * @allow (get) A patient can read their own consent documents. A health provider can read it to verify consent.
+       * @allow (get) A patient can read their own consent documents. A healthcare provider can read it to verify consent.
        * @allow (list) A patient can list their own consent documents.
        * @allow (update) A patient can update their own consent status.
-       * @deny (create) A health provider cannot create a consent document for a patient.
+       * @deny (create) A healthcare provider cannot create a consent document for a patient.
        * @deny (update) A patient cannot modify another patient's consent.
        * @principle Enforces strict document ownership for writes, but allows consented reads for verification.
        */
       match /consents/{consentId} {
-        allow get: if isOwner(patientId) || isHealthProvider();
+        allow get: if isOwner(patientId) || isHealthcareProvider();
         allow list: if isOwner(patientId);
         allow create: if isOwner(patientId) && request.resource.data.patientId == patientId;
         allow update: if isOwner(patientId) && isExistingDoc() && request.resource.data.patientId == resource.data.patientId;
@@ -153,20 +153,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for health provider profile documents.
-     * @path /healthProviders/{healthProviderId}
-     * @allow (get) A health provider can read their own profile. `auth.uid == healthProviderId`
-     * @allow (create) A new health provider can create their own profile document. `auth.uid == healthProviderId`
-     * @deny (list) No user can list all health providers in the system.
-     * @deny (get) A health provider cannot read another health provider's profile. `auth.uid != healthProviderId`
+     * @description Rules for healthcare provider profile documents.
+     * @path /healthcareProviders/{healthcareProviderId}
+     * @allow (get) A healthcare provider can read their own profile. `auth.uid == healthcareProviderId`
+     * @allow (create) A new healthcare provider can create their own profile document. `auth.uid == healthcareProviderId`
+     * @deny (list) No user can list all healthcare providers in the system.
+     * @deny (get) A healthcare provider cannot read another healthcare provider's profile. `auth.uid != healthcareProviderId`
      * @principle Restricts access to a user's own data tree.
      */
-    match /healthProviders/{healthProviderId} {
-      allow get: if isOwner(healthProviderId);
+    match /healthcareProviders/{healthcareProviderId} {
+      allow get: if isOwner(healthcareProviderId);
       allow list: if false;
-      allow create: if isOwner(healthProviderId) && hasValidIdOnCreate(healthProviderId);
-      allow update: if isOwner(healthProviderId) && isExistingDoc() && isIdImmutable();
-      allow delete: if isOwner(healthProviderId) && isExistingDoc();
+      allow create: if isOwner(healthcareProviderId) && hasValidIdOnCreate(healthcareProviderId);
+      allow update: if isOwner(healthcareProviderId) && isExistingDoc() && isIdImmutable();
+      allow delete: if isOwner(healthcareProviderId) && isExistingDoc();
     }
     
     /**
@@ -208,7 +208,7 @@ service cloud.firestore {
      * @path /healthRecords/{healthRecordId}
      * @allow (none) Direct access to the parent document is generally not needed.
      * @deny (list, create, update, delete) Direct client modification is forbidden.
-     * @principle Protects sensitive data by making it read-only for the owner and consented health providers, and write-locked for clients.
+     * @principle Protects sensitive data by making it read-only for the owner and consented healthcare providers, and write-locked for clients.
      */
     match /healthRecords/{healthRecordId} {
       // This document itself is not meant to be read directly. Rules are for the subcollection.
@@ -217,12 +217,12 @@ service cloud.firestore {
       /**
        * @description Rules for the individual medical events within a health record.
        * @path /healthRecords/{healthRecordId}/records/{recordId}
-       * @allow (get, list) A patient can read their own history. A health provider can read with consent.
+       * @allow (get, list) A patient can read their own history. A healthcare provider can read with consent.
        * @deny (create, update, delete) All writes must go through a trusted backend.
        */
       match /records/{recordId} {
         // healthRecordId is the same as the patientId
-        allow get, list: if isOwner(healthRecordId) || (isHealthProvider() && hasConsent(healthRecordId));
+        allow get, list: if isOwner(healthRecordId) || (isHealthcareProvider() && hasConsent(healthRecordId));
         allow write: if false;
       }
     }
@@ -230,16 +230,16 @@ service cloud.firestore {
     /**
      * @description Rules for the audit log of data access events.
      * @path /accessLogs/{accessLogId}
-     * @allow (get) A patient or health provider can read a log entry they are part of.
-     * @allow (create) A health provider can create a log entry for an action they perform.
+     * @allow (get) A patient or healthcare provider can read a log entry they are part of.
+     * @allow (create) A healthcare provider can create a log entry for an action they perform.
      * @deny (list) Listing all access logs is forbidden to prevent data mining.
      * @deny (update, delete) Log entries are immutable and cannot be changed or deleted.
      * @principle Enforces an immutable, append-only audit trail.
      */
     match /accessLogs/{accessLogId} {
-      allow get: if isOwner(resource.data.patientId) || isOwner(resource.data.healthProviderId);
+      allow get: if isOwner(resource.data.patientId) || isOwner(resource.data.healthcareProviderId);
       allow list: if false;
-      allow create: if isOwner(request.resource.data.healthProviderId);
+      allow create: if isOwner(request.resource.data.healthcareProviderId);
       allow update: if false;
       allow delete: if false;
     }
@@ -258,3 +258,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

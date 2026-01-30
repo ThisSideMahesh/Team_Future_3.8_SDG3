@@ -26,7 +26,7 @@ const searchSchema = z.object({
   patientId: z.string().nonempty({ message: 'Patient ID is required.' }),
 });
 
-export function HealthProviderView() {
+export function HealthcareProviderView() {
   const [searchedPatientId, setSearchedPatientId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -70,7 +70,7 @@ export function HealthProviderView() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">Health Provider Portal</h1>
+        <h1 className="text-3xl font-headline font-bold">Healthcare Provider Portal</h1>
         <p className="text-muted-foreground">Search for a patient to view their unified health record.</p>
       </div>
       
@@ -162,5 +162,7 @@ export function HealthProviderView() {
     </div>
   );
 }
+
+    
 
     

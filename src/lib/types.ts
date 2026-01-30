@@ -20,7 +20,7 @@ export type Patient = {
   bloodGroup: string;
 };
 
-export type HealthProvider = {
+export type HealthcareProvider = {
   id: string;
   name: string;
   email: string;
@@ -32,9 +32,9 @@ export type HealthProvider = {
 export type AccessLog = {
   id: string;
   patientId: string;
-  healthProviderId: string;
+  healthcareProviderId: string;
   accessorName: string;
-  accessorRole: 'Health Provider' | 'System';
+  accessorRole: 'Healthcare Provider' | 'System';
   timestamp: string;
   reason: string;
   emergencyAccess: boolean;
@@ -72,3 +72,5 @@ export type PlatformAdmin = {
     email: string;
     avatarUrl: string;
 };
+
+    

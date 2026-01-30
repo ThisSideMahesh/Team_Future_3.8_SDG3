@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import type { Patient, HealthProvider, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
+import type { Patient, HealthcareProvider, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -39,13 +39,13 @@ const formSchema = z.object({
   name: z.string().optional(),
 });
 
-type UserProfile = Patient | HealthProvider | InstitutionAdmin | PlatformAdmin;
+type UserProfile = Patient | HealthcareProvider | InstitutionAdmin | PlatformAdmin;
 
 type AuthFormProps = {
-  userType: "health-provider" | "patient" | "institution-admin" | "platform-admin";
+  userType: "healthcare-provider" | "patient" | "institution-admin" | "platform-admin";
 };
 
-const demoHealthProviders = [
+const demoHealthcareProviders = [
     { email: 'aarav.mehta@aarogyanova.demo', name: 'Dr. Aarav Mehta', role: 'Emergency Medical Officer', institutionName: 'AarogyaNova Hospital' },
     { email: 'kavya.nair@aarogyanova.demo', name: 'Nurse Kavya Nair', role: 'Emergency Nurse', institutionName: 'AarogyaNova Hospital' },
     { email: 'rohan.k@jeevanpath.demo', name: 'Dr. Rohan Kulkarni', role: 'General Physician', institutionName: 'JeevanPath Medical Center' },
@@ -70,7 +70,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: userType === 'health-provider' ? 'aarav.mehta@aarogyanova.demo' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : userType === 'platform-admin' ? 'admin@swasthyasetu.org' : 'rohan.sharma@example.com',
+      email: userType === 'healthcare-provider' ? 'aarav.mehta@aarogyanova.demo' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : userType === 'platform-admin' ? 'admin@swasthyasetu.org' : 'rohan.sharma@example.com',
       password: "password",
       name: "",
     },
@@ -80,7 +80,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
     if (!isUserLoading && user) {
         let path = '/';
         switch (userType) {
-            case 'health-provider': path = '/health-provider/dashboard'; break;
+            case 'healthcare-provider': path = '/health-provider/dashboard'; break;
             case 'patient': path = '/patient/dashboard'; break;
             case 'institution-admin': path = '/institution-admin/dashboard'; break;
             case 'platform-admin': path = '/platform-admin/dashboard'; break;
@@ -130,7 +130,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
             .finally(() => setIsLoading(false));
     } else { // Sign up
         if (userType !== 'patient' && (!values.name || values.name.trim() === "")) {
-            if(userType === 'health-provider') {
+            if(userType === 'healthcare-provider') {
                 // Name is pre-filled for demo providers, so this check is a safeguard
             } else {
                  form.setError("name", { type: "manual", message: "Name is required for sign up." });
@@ -150,13 +150,13 @@ export default function AuthForm({ userType }: AuthFormProps) {
                 const defaultEmail = values.email;
 
                 switch(userType) {
-                    case 'health-provider': {
-                        const demoProvider = demoHealthProviders.find(p => p.email === values.email);
+                    case 'healthcare-provider': {
+                        const demoProvider = demoHealthcareProviders.find(p => p.email === values.email);
                         if (!demoProvider) {
                             toast({
                                 variant: "destructive",
                                 title: "Registration Error",
-                                description: "This email is not associated with a pre-registered health provider. Please use one of the demo accounts.",
+                                description: "This email is not associated with a pre-registered healthcare provider. Please use one of the demo accounts.",
                             });
                             return Promise.reject(new Error("Provider not found in demo list."));
                         }
@@ -176,8 +176,8 @@ export default function AuthForm({ userType }: AuthFormProps) {
                         
                         const institutionDoc = instSnapshot.docs[0];
                         
-                        collectionName = 'healthProviders';
-                        const newProvider: HealthProvider = {
+                        collectionName = 'healthcareProviders';
+                        const newProvider: HealthcareProvider = {
                             id: user.uid,
                             name: demoProvider.name,
                             email: values.email,
@@ -250,8 +250,8 @@ export default function AuthForm({ userType }: AuthFormProps) {
   let userTypeName: string;
   let defaultEmail: string;
   switch(userType) {
-    case 'health-provider': 
-      userTypeName = 'Health Provider'; 
+    case 'healthcare-provider': 
+      userTypeName = 'Healthcare Provider'; 
       defaultEmail = 'aarav.mehta@aarogyanova.demo';
       break;
     case 'patient': 
@@ -312,7 +312,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
                     <FormControl>
                       <Input placeholder={`e.g. ${defaultEmail}`} {...field} />
                     </FormControl>
-                     {userType === 'health-provider' && !isLogin && (
+                     {userType === 'healthcare-provider' && !isLogin && (
                         <FormDescription>
                             Only pre-registered provider emails are allowed.
                         </FormDescription>
@@ -350,3 +350,5 @@ export default function AuthForm({ userType }: AuthFormProps) {
     </div>
   );
 }
+
+    

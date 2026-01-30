@@ -27,9 +27,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { HealthProvider, Patient, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
+import type { HealthcareProvider, Patient, InstitutionAdmin, PlatformAdmin } from "@/lib/types";
 
-type UserProfile = Patient | HealthProvider | InstitutionAdmin | PlatformAdmin;
+type UserProfile = Patient | HealthcareProvider | InstitutionAdmin | PlatformAdmin;
 
 export default function AuthLayout({
   children,
@@ -43,7 +43,7 @@ export default function AuthLayout({
 
   const [userType, collectionName, loginPath] = useMemo(() => {
     if (pathname.includes('/doctor/')) {
-        return ['health-provider', 'healthProviders', '/login/doctor'];
+        return ['healthcare-provider', 'healthcareProviders', '/login/doctor'];
     }
     if (pathname.includes('/institution-admin/')) {
         return ['institution-admin', 'institutionAdmins', '/login/institution-admin'];
@@ -175,3 +175,5 @@ export default function AuthLayout({
     </SidebarProvider>
   );
 }
+
+    

@@ -1,11 +1,11 @@
-import type { Patient, HealthProvider, AccessLog, MedicalEvent, Consent } from './types';
+import type { Patient, HealthcareProvider, AccessLog, MedicalEvent, Consent } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 // This file now primarily serves to provide type definitions and placeholder images.
 // The mock data is no longer used in the main application flow but is kept
 // here for reference or potential testing purposes.
 
-const healthProviderAvatar = PlaceHolderImages.find(img => img.id === 'doctor-avatar-1')?.imageUrl || '';
+const healthcareProviderAvatar = PlaceHolderImages.find(img => img.id === 'doctor-avatar-1')?.imageUrl || '';
 const patientAvatar = PlaceHolderImages.find(img => img.id === 'patient-avatar-1')?.imageUrl || '';
 
 const mockMedicalHistory: MedicalEvent[] = [
@@ -31,13 +31,14 @@ const mockPatients: Patient[] = [
   },
 ];
 
-const mockHealthProviders: HealthProvider[] = [
+const mockHealthcareProviders: HealthcareProvider[] = [
   {
     id: 'DOC98765',
     name: 'Dr. Anjali Verma',
     email: 'dr.verma@example.com',
-    specialty: 'Cardiology',
-    avatarUrl: healthProviderAvatar,
+    role: 'Cardiology',
+    institutionId: 'inst-1',
+    avatarUrl: healthcareProviderAvatar,
   },
 ];
 
@@ -56,11 +57,11 @@ export const getPatientById = async (id: string): Promise<Patient | undefined> =
   });
 };
 
-export const getHealthProviderById = async (id: string): Promise<HealthProvider | undefined> => {
-    console.warn("getHealthProviderById is a mock function and should not be used in production.");
+export const getHealthcareProviderById = async (id: string): Promise<HealthcareProvider | undefined> => {
+    console.warn("getHealthcareProviderById is a mock function and should not be used in production.");
     return new Promise(resolve => {
         setTimeout(() => {
-          resolve(mockHealthProviders.find(d => d.id === id));
+          resolve(mockHealthcareProviders.find(d => d.id === id));
         }, 500);
       });
 };
@@ -77,5 +78,7 @@ export const getAccessLogsByPatientId = async (patientId: string): Promise<Acces
         }
     });
 }
+
+    
 
     

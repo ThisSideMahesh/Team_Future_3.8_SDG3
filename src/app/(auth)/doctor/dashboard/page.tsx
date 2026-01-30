@@ -1,7 +1,9 @@
-import { HealthProviderView } from "./components/doctor-view";
+import { HealthcareProviderView } from "./components/doctor-view";
 
-export default function HealthProviderDashboardPage() {
-    return <HealthProviderView />;
+export default function HealthcareProviderDashboardPage() {
+    return <HealthcareProviderView />;
 }
+
+    
 
     

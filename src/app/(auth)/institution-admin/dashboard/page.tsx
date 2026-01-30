@@ -105,8 +105,8 @@ export default function InstitutionAdminDashboardPage() {
                 <TabsContent value="providers" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Health Provider Management</CardTitle>
-                            <CardDescription>Onboard, manage, and view health providers at your institution.</CardDescription>
+                            <CardTitle>Healthcare Provider Management</CardTitle>
+                            <CardDescription>Onboard, manage, and view healthcare providers at your institution.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="text-muted-foreground">Provider management functionality coming soon.</p>
@@ -151,3 +151,5 @@ export default function InstitutionAdminDashboardPage() {
         </div>
     );
 }
+
+    
