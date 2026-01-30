@@ -289,31 +289,22 @@ export function HealthcareProviderView() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* TEMP-ID Creation Dialog */}
       <AlertDialog open={showTempIdDialog} onOpenChange={setShowTempIdDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <FileWarning className="h-5 w-5" />
-              Create TEMP-ID for Unidentified Patient
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Create a temporary ID for an unidentified patient in an emergency situation.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Create TEMP-ID</AlertDialogTitle>
+            <AlertDialogDescription>For unidentified patient in emergency</AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Emergency Notes</label>
-              <Input
-                placeholder="Enter basic emergency notes (e.g., trauma, unconscious)"
-                value={tempIdNotes}
-                onChange={(e) => setTempIdNotes(e.target.value)}
-              />
-            </div>
+          <div>
+            <Input
+              placeholder="Emergency notes"
+              value={tempIdNotes}
+              onChange={(e) => setTempIdNotes(e.target.value)}
+            />
           </div>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => { setShowTempIdDialog(false); setTempIdNotes(""); }}>Cancel</Button>
-            <Button onClick={handleCreateTempId} disabled={!tempIdNotes.trim()}>Create TEMP-ID</Button>
+            <Button variant="outline" onClick={() => setShowTempIdDialog(false)}>Cancel</Button>
+            <Button onClick={handleCreateTempId} disabled={!tempIdNotes.trim()}>Create</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
