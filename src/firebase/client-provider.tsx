@@ -28,7 +28,15 @@ function Seeder() {
             setIsSeeding(true);
             setError(null);
             try {
-                const response = await fetch('/api/v1/seed', { method: 'POST' });
+                // Set a timeout for the fetch request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                
+                const response = await fetch('/api/v1/seed', { 
+                    method: 'POST',
+                    signal: controller.signal 
+                });
+                clearTimeout(timeoutId);
                 
                 // Handle 503 (service unavailable) gracefully - admin SDK not configured
                 if (response.status === 503) {
@@ -50,8 +58,15 @@ function Seeder() {
                 localStorage.setItem('db_seeded_v2', 'true');
                 setSeedComplete(true);
             } catch (err: any) {
-                console.error("Error seeding database:", err);
-                setError(err.message);
+                // Handle timeout and other errors gracefully
+                if (err.name === 'AbortError') {
+                    console.warn("Database seeding timed out. Skipping server-side seeding.");
+                    localStorage.setItem('db_seeded_v2', 'skipped_timeout');
+                    setSeedComplete(true);
+                } else {
+                    console.error("Error seeding database:", err);
+                    setError(err.message);
+                }
             } finally {
                 setIsSeeding(false);
             }
