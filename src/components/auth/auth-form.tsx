@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight } from "lucide-react";
 import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp, useFirebase } from "@/firebase";
-import { doc, setDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -144,21 +144,25 @@ export default function AuthForm({ userType }: AuthFormProps) {
                         return setDoc(doc(firestore, collectionName, user.uid), newProvider);
                     case 'institution-admin':
                         const institutionsRef = collection(firestore, 'institutions');
-                        const q = query(institutionsRef, where('adminEmail', '==', defaultEmail), where('status', '==', 'active'));
+                        // Simplified query to avoid needing a composite index.
+                        const q = query(institutionsRef, where('adminEmail', '==', defaultEmail));
                         const instSnapshot = await getDocs(q);
+                        
+                        // Filter for active institutions on the client side.
+                        const activeInstitutionDoc = instSnapshot.docs.find(d => d.data().status === 'active');
 
-                        if (instSnapshot.empty) {
+                        if (!activeInstitutionDoc) {
                              toast({
                                 variant: "destructive",
                                 title: "Registration Error",
                                 description: "This email is not associated with a pre-registered, active institution. Please contact support.",
                             });
-                            // Since we can't easily delete the auth user, we leave them in a state
-                            // where they can't log in to the dashboard. For a real app, this would
-                            // involve a cleanup function.
-                            return Promise.reject(new Error("Institution not found for admin email."));
+                            // We can't easily delete the auth user, so we leave them in a state
+                            // where they can't log in to the dashboard.
+                            return Promise.reject(new Error("Active institution not found for admin email."));
                         }
-                        const institutionDoc = instSnapshot.docs[0];
+
+                        const institutionDoc = activeInstitutionDoc;
                         const newAdmin: InstitutionAdmin = {
                             id: user.uid,
                             name: defaultName,
@@ -193,7 +197,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
             })
             .catch(error => {
                 // Catch errors from signup or from the subsequent logic (e.g., institution not found)
-                if (error.message !== "Institution not found for admin email.") {
+                if (error.message !== "Active institution not found for admin email.") {
                     handleAuthError(error);
                 }
             })
