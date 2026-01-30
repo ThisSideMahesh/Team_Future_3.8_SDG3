@@ -1,15 +1,11 @@
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import Image from 'next/image';
 
 const Logo = ({ className }: { className?: string }) => {
+  const logoUrl = "https://storage.googleapis.com/generative-ai-assets/swasthyasetu-logo.png";
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-        <Plus size={20} />
-      </div>
-      <span className="font-headline text-2xl font-bold tracking-tight">
-        SwasthyaSetu
-      </span>
+    <div className={cn("flex items-center", className)}>
+      <Image src={logoUrl} alt="SwasthyaSetu Logo" width={240} height={54} priority />
     </div>
   );
 };

@@ -26,12 +26,6 @@ export default function Home() {
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
-                SwasthyaSetu
-              </h1>
-              <p className="font-headline text-2xl md:text-3xl text-primary">
-                Ek Jeevan. Ek Swasthya Drishti.
-              </p>
               <p className="text-lg text-muted-foreground max-w-prose">
                 A unified platform connecting patients and doctors for a seamless healthcare experience. Access your aggregated health records from multiple providers, all in one place.
               </p>
