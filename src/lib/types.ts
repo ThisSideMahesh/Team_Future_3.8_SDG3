@@ -24,7 +24,8 @@ export type HealthProvider = {
   id: string;
   name: string;
   email: string;
-  specialty: string;
+  role: string;
+  institutionId: string;
   avatarUrl: string;
 };
 

@@ -45,6 +45,19 @@ type AuthFormProps = {
   userType: "health-provider" | "patient" | "institution-admin" | "platform-admin";
 };
 
+const demoHealthProviders = [
+    { email: 'aarav.mehta@aarogyanova.demo', name: 'Dr. Aarav Mehta', role: 'Emergency Medical Officer', institutionName: 'AarogyaNova Hospital' },
+    { email: 'kavya.nair@aarogyanova.demo', name: 'Nurse Kavya Nair', role: 'Emergency Nurse', institutionName: 'AarogyaNova Hospital' },
+    { email: 'rohan.k@jeevanpath.demo', name: 'Dr. Rohan Kulkarni', role: 'General Physician', institutionName: 'JeevanPath Medical Center' },
+    { email: 'pooja.verma@jeevanpath.demo', name: 'Nurse Pooja Verma', role: 'ICU Nurse', institutionName: 'JeevanPath Medical Center' },
+    { email: 'neel.shah@swasthicare.demo', name: 'Dr. Neel Shah', role: 'Internal Medicine Specialist', institutionName: 'SwasthiCare General Hospital' },
+    { email: 'isha.d@pranasetu.demo', name: 'Dr. Isha Deshmukh', role: 'Medical Officer', institutionName: 'PranaSetu Health Institute' },
+    { email: 'arjun.rao@arogyadeep.demo', name: 'Nurse Arjun Rao', role: 'Emergency Triage Nurse', institutionName: 'ArogyaDeep Community Hospital' },
+    { email: 'ananya.sen@jeevanrekha.demo', name: 'Dr. Ananya Sen', role: 'Duty Doctor', institutionName: 'JeevanRekha Rural Health Centre' },
+    { email: 'vikram.j@swasthyakiran.demo', name: 'Lab Officer Vikram Joshi', role: 'Diagnostic Officer', institutionName: 'SwasthyaKiran Diagnostic Labs' },
+    { email: 'meera.p@jeevanraksha.demo', name: 'Dr. Meera Patel', role: 'Emergency Consultant', institutionName: 'JeevanRaksha Emergency Hospital' },
+];
+
 export default function AuthForm({ userType }: AuthFormProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +70,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: userType === 'health-provider' ? 'dr.verma@example.com' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : userType === 'platform-admin' ? 'admin@swasthyasetu.org' : 'rohan.sharma@example.com',
+      email: userType === 'health-provider' ? 'aarav.mehta@aarogyanova.demo' : userType === 'institution-admin' ? 'admin@aarogyanova.demo' : userType === 'platform-admin' ? 'admin@swasthyasetu.org' : 'rohan.sharma@example.com',
       password: "password",
       name: "",
     },
@@ -116,11 +129,16 @@ export default function AuthForm({ userType }: AuthFormProps) {
             .catch(handleAuthError)
             .finally(() => setIsLoading(false));
     } else { // Sign up
-        if (!values.name || values.name.trim() === "") {
-            form.setError("name", { type: "manual", message: "Name is required for sign up." });
-            setIsLoading(false);
-            return;
+        if (userType !== 'patient' && (!values.name || values.name.trim() === "")) {
+            if(userType === 'health-provider') {
+                // Name is pre-filled for demo providers, so this check is a safeguard
+            } else {
+                 form.setError("name", { type: "manual", message: "Name is required for sign up." });
+                 setIsLoading(false);
+                 return;
+            }
         }
+
 
         initiateEmailSignUp(auth, values.email, values.password)
             .then(async (userCredential) => {
@@ -132,23 +150,48 @@ export default function AuthForm({ userType }: AuthFormProps) {
                 const defaultEmail = values.email;
 
                 switch(userType) {
-                    case 'health-provider':
+                    case 'health-provider': {
+                        const demoProvider = demoHealthProviders.find(p => p.email === values.email);
+                        if (!demoProvider) {
+                            toast({
+                                variant: "destructive",
+                                title: "Registration Error",
+                                description: "This email is not associated with a pre-registered health provider. Please use one of the demo accounts.",
+                            });
+                            return Promise.reject(new Error("Provider not found in demo list."));
+                        }
+
+                        const institutionsRef = collection(firestore, 'institutions');
+                        const q = query(institutionsRef, where('name', '==', demoProvider.institutionName));
+                        const instSnapshot = await getDocs(q);
+
+                        if (instSnapshot.empty) {
+                            toast({
+                                variant: "destructive",
+                                title: "Registration Error",
+                                description: `Could not find the institution '${demoProvider.institutionName}' for this provider.`,
+                            });
+                            return Promise.reject(new Error("Institution not found."));
+                        }
+                        
+                        const institutionDoc = instSnapshot.docs[0];
+                        
                         collectionName = 'healthProviders';
                         const newProvider: HealthProvider = {
                             id: user.uid,
-                            name: defaultName,
-                            email: defaultEmail,
-                            specialty: 'General Medicine',
+                            name: demoProvider.name,
+                            email: values.email,
+                            role: demoProvider.role,
+                            institutionId: institutionDoc.id,
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'doctor-avatar-1')?.imageUrl || ''
                         };
                         return setDoc(doc(firestore, collectionName, user.uid), newProvider);
-                    case 'institution-admin':
+                    }
+                    case 'institution-admin': {
                         const institutionsRef = collection(firestore, 'institutions');
-                        // Simplified query to avoid needing a composite index.
                         const q = query(institutionsRef, where('adminEmail', '==', defaultEmail));
                         const instSnapshot = await getDocs(q);
                         
-                        // Filter for active institutions on the client side.
                         const activeInstitutionDoc = instSnapshot.docs.find(d => d.data().status === 'active');
 
                         if (!activeInstitutionDoc) {
@@ -157,21 +200,19 @@ export default function AuthForm({ userType }: AuthFormProps) {
                                 title: "Registration Error",
                                 description: "This email is not associated with a pre-registered, active institution. Please contact support.",
                             });
-                            // We can't easily delete the auth user, so we leave them in a state
-                            // where they can't log in to the dashboard.
                             return Promise.reject(new Error("Active institution not found for admin email."));
                         }
 
-                        const institutionDoc = activeInstitutionDoc;
                         const newAdmin: InstitutionAdmin = {
                             id: user.uid,
                             name: defaultName,
                             email: defaultEmail,
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'admin-avatar-1')?.imageUrl || '',
-                            institutionId: institutionDoc.id,
+                            institutionId: activeInstitutionDoc.id,
                             role: 'Primary Admin'
                          };
                          return setDoc(doc(firestore, 'institutionAdmins', user.uid), newAdmin);
+                    }
                     case 'platform-admin':
                         collectionName = 'platformAdmins';
                         const newPlatformAdmin: PlatformAdmin = {
@@ -186,7 +227,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
                         collectionName = 'patients';
                         const newPatient: Patient = {
                             id: user.uid,
-                            name: defaultName,
+                            name: values.name || 'New Patient', // Capture name on signup for patients too
                             email: defaultEmail,
                             dateOfBirth: '1990-01-01',
                             avatarUrl: PlaceHolderImages.find(p => p.id === 'patient-avatar-1')?.imageUrl || '',
@@ -196,9 +237,10 @@ export default function AuthForm({ userType }: AuthFormProps) {
                 }
             })
             .catch(error => {
-                // Catch errors from signup or from the subsequent logic (e.g., institution not found)
-                if (error.message !== "Active institution not found for admin email.") {
-                    handleAuthError(error);
+                if (error.message.includes("not found")) {
+                    // Errors are already handled by toasts within the logic, so we can ignore them here.
+                } else {
+                     handleAuthError(error);
                 }
             })
             .finally(() => setIsLoading(false));
@@ -210,7 +252,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   switch(userType) {
     case 'health-provider': 
       userTypeName = 'Health Provider'; 
-      defaultEmail = 'dr.verma@example.com';
+      defaultEmail = 'aarav.mehta@aarogyanova.demo';
       break;
     case 'patient': 
       userTypeName = 'Patient'; 
@@ -270,6 +312,11 @@ export default function AuthForm({ userType }: AuthFormProps) {
                     <FormControl>
                       <Input placeholder={`e.g. ${defaultEmail}`} {...field} />
                     </FormControl>
+                     {userType === 'health-provider' && !isLogin && (
+                        <FormDescription>
+                            Only pre-registered provider emails are allowed.
+                        </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
