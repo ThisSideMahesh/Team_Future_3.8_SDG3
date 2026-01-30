@@ -230,7 +230,7 @@
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "approved", "rejected", "active"]
+          "enum": ["pending", "approved", "rejected", "active", "suspended"]
         },
         "city": { "type": "string" },
         "state": { "type": "string" },
@@ -426,3 +426,5 @@
     "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, healthcare providers, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
   }
 }
+
+    
