@@ -1,8 +1,6 @@
-
 'use client'
 
-import Image from "next/image";
-import Link from "next/link";
+import { useEffect } from "react";
 import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useAuth, useDoc, useFirebase, useMemoFirebase, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -44,6 +42,13 @@ export default function AuthLayout({
   const userType = pathname.includes('/doctor/') ? 'doctor' : 'patient';
   const collectionName = userType === 'doctor' ? 'doctors' : 'patients';
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        const loginPath = userType === 'doctor' ? '/login/doctor' : '/login/patient';
+        router.push(loginPath);
+    }
+  }, [user, isUserLoading, router, userType]);
+
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, collectionName, user.uid);
@@ -56,7 +61,8 @@ export default function AuthLayout({
     router.push('/');
   };
 
-  if (isUserLoading || isDataLoading) {
+  // A full-page loader is appropriate during the initial authentication check.
+  if (isUserLoading) {
     return (
         <div className="flex h-screen w-full">
             <SidebarProvider>
@@ -78,9 +84,14 @@ export default function AuthLayout({
     )
   }
   
-  if (!user || !userData) {
-    router.push(userType === 'doctor' ? '/login/doctor' : '/login/patient');
-    return null;
+  // If the user is not authenticated, the useEffect will handle redirection.
+  // Show a simple loader to prevent rendering a broken UI before the redirect happens.
+  if (!user) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    );
   }
 
   return (
@@ -101,19 +112,32 @@ export default function AuthLayout({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={userData.avatarUrl} alt={userData.name} />
-                    <AvatarFallback>{userData.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  {/* Show a skeleton while the user's profile data is loading */}
+                  {isDataLoading || !userData ? (
+                     <Skeleton className="h-10 w-10 rounded-full" />
+                  ) : (
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={userData.avatarUrl} alt={userData.name} />
+                      <AvatarFallback>{userData.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{userData.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
-                  </div>
-                </DropdownMenuLabel>
+                {/* Also show skeletons for the dropdown content */}
+                {isDataLoading || !userData ? (
+                    <div className="p-2 space-y-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                    </div>
+                ) : (
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{userData.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <UserIcon className="mr-2 h-4 w-4" />
