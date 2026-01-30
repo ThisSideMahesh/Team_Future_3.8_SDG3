@@ -15,7 +15,7 @@ import { useState } from "react";
 const MOCK_PATIENT = {
   patient_id: "PAT_001",
   name: "Rohit Verma",
-  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit",
+  avatarUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%234ade80' width='64' height='64'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='28' font-weight='bold'%3ERV%3C/text%3E%3C/svg%3E",
 };
 
 const MOCK_HEALTH_RECORDS = [
