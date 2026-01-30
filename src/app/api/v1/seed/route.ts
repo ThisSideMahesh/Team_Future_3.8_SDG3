@@ -39,8 +39,8 @@ const patientsData = [
 ];
 
 const consentsData = [
-  { patient_id: "PAT_001", granted: true, last_updated: "2026-01-25T09:00:00Z" },
-  { patient_id: "PAT_002", granted: true, last_updated: "2026-01-25T09:10:00Z" },
+  { consent_id: "PAT_001", patient_id: "PAT_001", granted: true, last_updated: "2026-01-25T09:00:00Z" },
+  { consent_id: "PAT_002", patient_id: "PAT_002", granted: true, last_updated: "2026-01-25T09:10:00Z" },
 ];
 
 const recordsData = [
@@ -92,8 +92,8 @@ export async function POST() {
         });
 
         consentsData.forEach(data => {
-            const ref = adminDb.collection('consents').doc(data.patient_id);
-            batch.set(ref, { ...data, consent_id: data.patient_id });
+            const ref = adminDb.collection('consents').doc(data.consent_id);
+            batch.set(ref, data);
         });
 
         recordsData.forEach(data => {
