@@ -131,9 +131,8 @@ export function HealthcareProviderView() {
         </CardContent>
       </Card>
 
-      {/* SECTION 2 & 3: Unified Health Record + Consent Status */}
       {searchedPatient && (
-        <Tabs defaultValue="record" className="w-full">
+        <Tabs defaultValue="record">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="record">Health Record</TabsTrigger>
             <TabsTrigger value="consent">Consent Status</TabsTrigger>
@@ -145,8 +144,6 @@ export function HealthcareProviderView() {
                 <Shield className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Patient consent required for access.</strong>
-                  <br />
-                  You can request emergency access if this is a life-threatening situation.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -155,26 +152,20 @@ export function HealthcareProviderView() {
                   <Alert variant="destructive">
                     <AlertOctagon className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Emergency Access Active</strong> - Limited data only. This access is being logged.
+                      <strong>Emergency Access Active</strong> - Limited data only. Logged.
                     </AlertDescription>
                   </Alert>
                 )}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-primary" />
-                      Unified Health Record - {searchedPatient.name}
-                    </CardTitle>
+                    <CardTitle>Unified Health Record - {searchedPatient.name}</CardTitle>
                     <CardDescription>Patient ID: {searchedPatient.patient_id}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-4 md:grid-cols-2">
                       <Card className="border-red-200 bg-red-50/50">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2 text-red-700">
-                            <Activity className="h-4 w-4" />
-                            Blood Group
-                          </CardTitle>
+                          <CardTitle className="text-base text-red-700">Blood Group</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <p className="text-2xl font-bold text-red-700">{searchedPatient.blood_group}</p>
@@ -183,10 +174,7 @@ export function HealthcareProviderView() {
 
                       <Card className="border-orange-200 bg-orange-50/50">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2 text-orange-700">
-                            <AlertTriangle className="h-4 w-4" />
-                            Critical Allergies
-                          </CardTitle>
+                          <CardTitle className="text-base text-orange-700">Critical Allergies</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="flex flex-wrap gap-2">
@@ -199,10 +187,7 @@ export function HealthcareProviderView() {
 
                       <Card className="border-blue-200 bg-blue-50/50">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2 text-blue-700">
-                            <Activity className="h-4 w-4" />
-                            Chronic Conditions
-                          </CardTitle>
+                          <CardTitle className="text-base text-blue-700">Chronic Conditions</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-1">
@@ -219,7 +204,7 @@ export function HealthcareProviderView() {
                       {!emergencyAccess && searchedPatient.medications && (
                         <Card>
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Current Medications</CardTitle>
+                            <CardTitle className="text-base">Medications</CardTitle>
                           </CardHeader>
                           <CardContent>
                             <div className="space-y-1">
@@ -233,46 +218,19 @@ export function HealthcareProviderView() {
                           </CardContent>
                         </Card>
                       )}
-
-                      {!emergencyAccess && searchedPatient.lab_summaries && (
-                        <Card className="md:col-span-2">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Lab Summaries</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex flex-wrap gap-2">
-                              {searchedPatient.lab_summaries.map((lab: string, idx: number) => (
-                                <Badge key={idx} variant="secondary">{lab}</Badge>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                    <div className="mt-4 text-xs text-muted-foreground">
-                      Last updated: {new Date(searchedPatient.last_updated).toLocaleString('en-IN')}
                     </div>
                   </CardContent>
                 </Card>
               </>
             )}
 
-            {/* SECTION 4: Emergency Access Button */}
             {!searchedPatient.consent_granted && !emergencyAccess && (
               <Card className="border-red-500">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-700">
-                    <AlertOctagon className="h-5 w-5" />
-                    Emergency Access
-                  </CardTitle>
-                  <CardDescription>Access critical patient data in life-threatening situations</CardDescription>
+                  <CardTitle className="text-red-700">Emergency Access</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowEmergencyDialog(true)}
-                    className="w-full"
-                  >
+                  <Button variant="destructive" onClick={() => setShowEmergencyDialog(true)} className="w-full">
                     Request Emergency Access
                   </Button>
                 </CardContent>
@@ -283,10 +241,7 @@ export function HealthcareProviderView() {
           <TabsContent value="consent" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  Consent Status
-                </CardTitle>
+                <CardTitle>Consent Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 p-4 rounded-lg border">
@@ -295,7 +250,7 @@ export function HealthcareProviderView() {
                       <CheckCircle className="h-8 w-8 text-green-500" />
                       <div>
                         <p className="font-semibold text-green-700">Consent Granted</p>
-                        <p className="text-sm text-muted-foreground">You have permission to access this patient's full health record</p>
+                        <p className="text-sm text-muted-foreground">Full access permitted</p>
                       </div>
                     </>
                   ) : (
@@ -303,7 +258,7 @@ export function HealthcareProviderView() {
                       <XCircle className="h-8 w-8 text-red-500" />
                       <div>
                         <p className="font-semibold text-red-700">Consent Not Granted</p>
-                        <p className="text-sm text-muted-foreground">Patient has not granted consent for data access. Emergency access available if needed.</p>
+                        <p className="text-sm text-muted-foreground">Emergency access available</p>
                       </div>
                     </>
                   )}
