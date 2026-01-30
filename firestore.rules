@@ -64,6 +64,24 @@ service cloud.firestore {
     }
 
     /**
+     * Checks if the authenticated user is a doctor by verifying their profile document.
+     */
+    function isDoctor() {
+      return isSignedIn() && exists(/databases/$(database)/documents/doctors/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if a patient has granted consent for data aggregation.
+     * Assumes the consent document ID is the same as the patient's UID for predictability.
+     */
+    function hasConsent(patientId) {
+      // Check if a consent document for this patient exists and its 'granted' field is true.
+      // We assume the consent document ID is the same as the patientId for predictability.
+      return exists(/databases/$(database)/documents/patients/$(patientId)/consents/$(patientId))
+             && get(/databases/$(database)/documents/patients/$(patientId)/consents/$(patientId)).data.granted == true;
+    }
+
+    /**
      * Checks if a document currently exists.
      * Used in update/delete rules to prevent acting on non-existent data.
      */
@@ -99,14 +117,14 @@ service cloud.firestore {
     /**
      * @description Rules for patient profile documents.
      * @path /patients/{patientId}
-     * @allow (get) A patient can read their own profile. `auth.uid == patientId`
+     * @allow (get) A patient can read their own profile. A doctor can read a patient's profile if consent is granted.
      * @allow (create) A new patient can create their own profile document. `auth.uid == patientId`
      * @deny (list) No user can list all patients in the system.
      * @deny (get) A patient cannot read another patient's profile. `auth.uid != patientId`
-     * @principle Restricts access to a user's own data tree.
+     * @principle Restricts access to a user's own data tree, but allows consented access for doctors.
      */
     match /patients/{patientId} {
-      allow get: if isOwner(patientId);
+      allow get: if isOwner(patientId) || (isDoctor() && hasConsent(patientId));
       allow list: if false;
       allow create: if isOwner(patientId) && hasValidPatientIdOnCreate(patientId);
       allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
@@ -148,19 +166,27 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for aggregated patient health records.
+     * @description Rules for aggregated patient health records. This path contains a subcollection of actual records.
      * @path /healthRecords/{healthRecordId}
-     * @allow (get) A patient can read their own health record. `auth.uid == resource.data.patientId`
-     * @deny (list) No one can list all health records.
-     * @deny (create, update, delete) Direct client modification is forbidden; all writes must go through a trusted backend.
-     * @principle Protects sensitive data by making it read-only for the owner and write-locked for clients.
+     * @allow (none) Direct access to the parent document is generally not needed.
+     * @deny (list, create, update, delete) Direct client modification is forbidden.
+     * @principle Protects sensitive data by making it read-only for the owner and consented doctors, and write-locked for clients.
      */
     match /healthRecords/{healthRecordId} {
-      allow get: if isOwner(resource.data.patientId);
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      // This document itself is not meant to be read directly. Rules are for the subcollection.
+      allow read, write: if false;
+
+      /**
+       * @description Rules for the individual medical events within a health record.
+       * @path /healthRecords/{healthRecordId}/records/{recordId}
+       * @allow (get, list) A patient can read their own history. A doctor can read with consent.
+       * @deny (create, update, delete) All writes must go through a trusted backend.
+       */
+      match /records/{recordId} {
+        // healthRecordId is the same as the patientId
+        allow get, list: if isOwner(healthRecordId) || (isDoctor() && hasConsent(healthRecordId));
+        allow write: if false;
+      }
     }
 
     /**
@@ -190,11 +216,7 @@ service cloud.firestore {
     match /labReports/{labReportId} {
       // CRITICAL: Cannot implement owner-only writes. The 'LabReport' entity is missing an 'ownerId' or 'patientId' field.
       // Access must be brokered by a trusted backend (e.g., Cloud Function) until the schema is updated.
-      allow get: if false;
-      allow list: if false;
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow read, write: if false;
     }
   }
 }
