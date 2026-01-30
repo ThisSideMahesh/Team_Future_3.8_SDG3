@@ -10,8 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Heart, Shield, Activity, AlertTriangle, Clock, Hospital, CheckCircle, XCircle } from "lucide-react";
 import { useState, useMemo, memo } from "react";
-
-// Mock data for demonstration
 const MOCK_PATIENT = {
   patient_id: "PAT_001",
   name: "Rohit Verma",
