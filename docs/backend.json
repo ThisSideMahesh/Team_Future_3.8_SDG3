@@ -24,19 +24,19 @@
         "name"
       ]
     },
-    "Doctor": {
+    "HealthProvider": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Doctor",
+      "title": "HealthProvider",
       "type": "object",
-      "description": "Represents a doctor in the SwasthyaSetu system.",
+      "description": "Represents a health provider in the SwasthyaSetu system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the doctor entity."
+          "description": "Unique identifier for the health provider entity."
         },
         "name": {
           "type": "string",
-          "description": "The doctor's full name."
+          "description": "The health provider's full name."
         }
       },
       "required": [
@@ -136,9 +136,9 @@
           "type": "string",
           "description": "Reference to Patient. (Relationship: Patient 1:N AccessLog)"
         },
-        "doctorId": {
+        "healthProviderId": {
           "type": "string",
-          "description": "Reference to Doctor. (Relationship: Doctor 1:N AccessLog)"
+          "description": "Reference to HealthProvider. (Relationship: HealthProvider 1:N AccessLog)"
         },
         "timestamp": {
           "type": "string",
@@ -157,7 +157,7 @@
       "required": [
         "id",
         "patientId",
-        "doctorId",
+        "healthProviderId",
         "timestamp",
         "reason"
       ]
@@ -213,17 +213,17 @@
         }
       },
       {
-        "path": "/doctors/{doctorId}",
+        "path": "/healthProviders/{healthProviderId}",
         "definition": {
-          "entityName": "Doctor",
+          "entityName": "HealthProvider",
           "schema": {
-            "$ref": "#/backend/entities/Doctor"
+            "$ref": "#/backend/entities/HealthProvider"
           },
-          "description": "Stores doctor profile information. Doctor ID is used as the document ID.",
+          "description": "Stores health provider profile information. Health Provider ID is used as the document ID.",
           "params": [
             {
-              "name": "doctorId",
-              "description": "The unique identifier for the doctor."
+              "name": "healthProviderId",
+              "description": "The unique identifier for the health provider."
             }
           ]
         }
@@ -271,7 +271,7 @@
           "schema": {
             "$ref": "#/backend/entities/AccessLog"
           },
-          "description": "Stores logs of data access. Includes patientId and doctorId. Access Log ID is auto-generated.",
+          "description": "Stores logs of data access. Includes patientId and healthProviderId. Access Log ID is auto-generated.",
           "params": [
             {
               "name": "accessLogId",
@@ -297,6 +297,8 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, doctors, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
+    "reasoning": "The Firestore structure prioritizes security, especially around consent and emergency access. It uses path-based ownership and denormalization for authorization independence, avoiding `get()` calls in security rules and enabling atomic operations. The structure segregates data based on access needs, using separate collections for user profiles, health records, consent records, and access logs. The use of explicit state modeling and consistent naming conventions enhance data clarity and predictability.\n\nSpecifically, Authorization Independence is achieved by storing consent status directly within the `/patients/{patientId}/consents/{consentId}` document. This eliminates the need to `get()` the patient document to check consent, enabling atomic operations. Segregation of data into separate collections for patients, health providers, health records, consents, and access logs ensures each collection can have its own tailored security rules, simplifying rule complexity and improving security.\n\nTo achieve QAPs (Rules are not Filters) and prevent insecure list operations, the structure leverages path-based ownership for private data (`/users/{userId}/...`) and separates data with different access requirements into different collections."
   }
 }
+
+    

@@ -26,7 +26,7 @@ const searchSchema = z.object({
   patientId: z.string().nonempty({ message: 'Patient ID is required.' }),
 });
 
-export function DoctorView() {
+export function HealthProviderView() {
   const [searchedPatientId, setSearchedPatientId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -70,13 +70,14 @@ export function DoctorView() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-headline font-bold">Doctor Dashboard</h1>
+        <h1 className="text-3xl font-headline font-bold">Health Provider Portal</h1>
         <p className="text-muted-foreground">Search for a patient to view their unified health record.</p>
       </div>
       
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Patient Search</CardTitle>
+          <CardDescription>Search by Patient ID, Health ID / QR Code, or TEMP-ID only.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -96,7 +97,7 @@ export function DoctorView() {
               />
               <div className="w-full sm:w-auto pt-0 sm:pt-8 flex items-center gap-2">
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                  {isLoading ? 'Searching...' : <><Search className="mr-2 h-4 w-4" /> Search</>}
+                  {isLoading ? 'Searching...' : <><Search className="mr-2 h-4 w-4" /> Fetch Unified Health Record</>}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)} className="w-full sm:w-auto">
                    <QrCode className="mr-2 h-4 w-4" /> Scan QR
@@ -114,7 +115,7 @@ export function DoctorView() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {patientError ? `Permission Denied or ${patientError.message}` : "Patient not found. Please check the ID and try again."}
+            {patientError ? `Permission Denied or ${patientError.message}` : "Patient not found or consent not granted. Please check the ID and patient consent status."}
           </AlertDescription>
         </Alert>
       )}
@@ -161,3 +162,5 @@ export function DoctorView() {
     </div>
   );
 }
+
+    

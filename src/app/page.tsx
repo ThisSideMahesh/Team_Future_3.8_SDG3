@@ -18,7 +18,7 @@ export default function Home() {
             <Link href="/login/patient">Patient Login</Link>
           </Button>
           <Button asChild>
-            <Link href="/login/doctor">Doctor Login</Link>
+            <Link href="/login/doctor">Health Provider Login</Link>
           </Button>
         </div>
       </header>
@@ -30,12 +30,12 @@ export default function Home() {
                 A Unified Health Record for a Healthier India.
               </h1>
               <p className="text-lg text-muted-foreground max-w-prose">
-                SwasthyaSetu is a unified platform connecting patients and doctors for a seamless healthcare experience. Access your aggregated health records from multiple providers, all in one place.
+                SwasthyaSetu is a unified platform connecting patients and health providers for a seamless healthcare experience. Access your aggregated health records from multiple providers, all in one place.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
                   <Link href="/login/doctor">
-                    I'm a Doctor <Stethoscope className="ml-2" />
+                    I'm a Health Provider <Stethoscope className="ml-2" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="secondary" asChild>
@@ -70,7 +70,7 @@ export default function Home() {
                     <Card className="text-left">
                         <CardHeader>
                             <CardTitle className="font-headline flex items-center gap-2">
-                                <Stethoscope className="text-primary"/> For Doctors
+                                <Stethoscope className="text-primary"/> For Health Providers
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -107,3 +107,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

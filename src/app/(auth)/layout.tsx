@@ -27,7 +27,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Doctor, Patient } from "@/lib/types";
+import type { HealthProvider, Patient } from "@/lib/types";
 
 export default function AuthLayout({
   children,
@@ -39,12 +39,12 @@ export default function AuthLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const userType = pathname.includes('/doctor/') ? 'doctor' : 'patient';
-  const collectionName = userType === 'doctor' ? 'doctors' : 'patients';
+  const userType = pathname.includes('/doctor/') ? 'health-provider' : 'patient';
+  const collectionName = userType === 'health-provider' ? 'healthProviders' : 'patients';
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-        const loginPath = userType === 'doctor' ? '/login/doctor' : '/login/patient';
+        const loginPath = userType === 'health-provider' ? '/login/doctor' : '/login/patient';
         router.push(loginPath);
     }
   }, [user, isUserLoading, router, userType]);
@@ -54,7 +54,7 @@ export default function AuthLayout({
     return doc(firestore, collectionName, user.uid);
   }, [firestore, user, collectionName]);
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<Doctor | Patient>(userDocRef);
+  const { data: userData, isLoading: isDataLoading } = useDoc<HealthProvider | Patient>(userDocRef);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -163,3 +163,5 @@ export default function AuthLayout({
     </SidebarProvider>
   );
 }
+
+    

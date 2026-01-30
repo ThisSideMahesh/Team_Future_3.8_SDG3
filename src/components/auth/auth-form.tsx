@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import Logo from "@/components/icons/logo";
 import { useToast } from "@/hooks/use-toast";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import type { Patient, Doctor } from "@/lib/types";
+import type { Patient, HealthProvider } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -40,7 +40,7 @@ const formSchema = z.object({
 });
 
 type AuthFormProps = {
-  userType: "doctor" | "patient";
+  userType: "health-provider" | "patient";
 };
 
 export default function AuthForm({ userType }: AuthFormProps) {
@@ -55,7 +55,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: userType === 'doctor' ? 'dr.verma@example.com' : 'rohan.sharma@example.com',
+      email: userType === 'health-provider' ? 'dr.verma@example.com' : 'rohan.sharma@example.com',
       password: "password",
       name: "",
     },
@@ -63,7 +63,8 @@ export default function AuthForm({ userType }: AuthFormProps) {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-        router.push(`/${userType}/dashboard`);
+        const path = userType === 'health-provider' ? '/doctor/dashboard' : '/patient/dashboard';
+        router.push(path);
     }
   }, [user, isUserLoading, router, userType]);
 
@@ -116,12 +117,12 @@ export default function AuthForm({ userType }: AuthFormProps) {
         initiateEmailSignUp(auth, values.email, values.password)
             .then(userCredential => {
                 const user = userCredential.user;
-                const collectionName = userType === 'doctor' ? 'doctors' : 'patients';
+                const collectionName = userType === 'health-provider' ? 'healthProviders' : 'patients';
                 const userDocRef = doc(firestore, collectionName, user.uid);
                 
-                let newUser: Patient | Doctor;
+                let newUser: Patient | HealthProvider;
 
-                if (userType === 'doctor') {
+                if (userType === 'health-provider') {
                     newUser = {
                         id: user.uid,
                         name: values.name || `Dr. ${values.email.split('@')[0]}`,
@@ -149,6 +150,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
   };
 
   const title = isLogin ? "Login" : "Sign Up";
+  const userTypeName = userType === 'health-provider' ? 'Health Provider' : 'Patient';
   const description = `Enter your details to ${isLogin ? "access your account" : "create an account"}.`;
   const buttonText = isLogin ? "Login" : "Sign Up";
   const toggleText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
@@ -160,7 +162,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
             <Link href="/" className="flex justify-center mb-4">
                 <Logo />
             </Link>
-          <CardTitle className="font-headline text-2xl">{`${userType === 'doctor' ? 'Doctor' : 'Patient'} ${title}`}</CardTitle>
+          <CardTitle className="font-headline text-2xl">{`${userTypeName} ${title}`}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,3 +225,5 @@ export default function AuthForm({ userType }: AuthFormProps) {
     </div>
   );
 }
+
+    

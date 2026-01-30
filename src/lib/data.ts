@@ -1,11 +1,11 @@
-import type { Patient, Doctor, AccessLog, MedicalEvent, Consent } from './types';
+import type { Patient, HealthProvider, AccessLog, MedicalEvent, Consent } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 // This file now primarily serves to provide type definitions and placeholder images.
 // The mock data is no longer used in the main application flow but is kept
 // here for reference or potential testing purposes.
 
-const doctorAvatar = PlaceHolderImages.find(img => img.id === 'doctor-avatar-1')?.imageUrl || '';
+const healthProviderAvatar = PlaceHolderImages.find(img => img.id === 'doctor-avatar-1')?.imageUrl || '';
 const patientAvatar = PlaceHolderImages.find(img => img.id === 'patient-avatar-1')?.imageUrl || '';
 
 const mockMedicalHistory: MedicalEvent[] = [
@@ -31,25 +31,17 @@ const mockPatients: Patient[] = [
   },
 ];
 
-const mockDoctors: Doctor[] = [
+const mockHealthProviders: HealthProvider[] = [
   {
     id: 'DOC98765',
     name: 'Dr. Anjali Verma',
     email: 'dr.verma@example.com',
     specialty: 'Cardiology',
-    avatarUrl: doctorAvatar,
+    avatarUrl: healthProviderAvatar,
   },
 ];
 
-const mockAccessLogs: AccessLog[] = [
-    {
-        id: 'log1',
-        accessorName: 'Dr. Evelyn Reed',
-        accessorRole: 'Doctor',
-        date: '2023-10-26T10:00:00Z',
-        action: 'Viewed Record'
-    },
-];
+const mockAccessLogs: AccessLog[] = [];
 
 // Note: The following functions are not actively used by the application anymore,
 // as data is fetched directly from Firestore. They are retained for potential
@@ -64,11 +56,11 @@ export const getPatientById = async (id: string): Promise<Patient | undefined> =
   });
 };
 
-export const getDoctorById = async (id: string): Promise<Doctor | undefined> => {
-    console.warn("getDoctorById is a mock function and should not be used in production.");
+export const getHealthProviderById = async (id: string): Promise<HealthProvider | undefined> => {
+    console.warn("getHealthProviderById is a mock function and should not be used in production.");
     return new Promise(resolve => {
         setTimeout(() => {
-          resolve(mockDoctors.find(d => d.id === id));
+          resolve(mockHealthProviders.find(d => d.id === id));
         }, 500);
       });
 };
@@ -78,10 +70,12 @@ export const getAccessLogsByPatientId = async (patientId: string): Promise<Acces
     return new Promise(resolve => {
         if(patientId === 'PAT12345') {
             setTimeout(() => {
-                resolve(mockAccessLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                resolve(mockAccessLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
             }, 300);
         } else {
             resolve([]);
         }
     });
 }
+
+    

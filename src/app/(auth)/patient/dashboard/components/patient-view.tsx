@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import type { Patient, AccessLog, Consent, MedicalEvent } from "@/lib/types";
 import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, collection, setDoc } from "firebase/firestore";
+import { doc, collection, setDoc, query, where } from "firebase/firestore";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,8 +34,8 @@ export function PatientView() {
   const healthRecordsRef = useMemoFirebase(() => user ? collection(firestore, `healthRecords/${user.uid}/records`) : null, [firestore, user]);
   const { data: medicalHistory, isLoading: isHistoryLoading } = useCollection<MedicalEvent>(healthRecordsRef);
 
-  const accessLogsRef = useMemoFirebase(() => user ? collection(firestore, `accessLogs`) : null, [firestore, user]);
-  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<AccessLog>(accessLogsRef)
+  const accessLogsQuery = useMemoFirebase(() => user ? query(collection(firestore, `accessLogs`), where('patientId', '==', user.uid)) : null, [firestore, user]);
+  const {data: accessLogs, isLoading: isLogsLoading} = useCollection<AccessLog>(accessLogsQuery)
 
 
   const handleConsentChange = (granted: boolean) => {
@@ -150,6 +150,7 @@ export function PatientView() {
                         <TableHead>Accessor</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Date & Time</TableHead>
+                        <TableHead>Reason</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -157,9 +158,17 @@ export function PatientView() {
                             <TableRow key={log.id}>
                                 <TableCell className="font-medium">{log.accessorName}</TableCell>
                                 <TableCell>{log.accessorRole}</TableCell>
-                                <TableCell>{new Date(log.date).toLocaleString()}</TableCell>
+                                <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                                <TableCell>{log.reason}</TableCell>
                             </TableRow>
                         ))}
+                         {(!accessLogs || accessLogs.length === 0) && (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                                    No access logs found.
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -169,3 +178,5 @@ export function PatientView() {
     </div>
   );
 }
+
+    

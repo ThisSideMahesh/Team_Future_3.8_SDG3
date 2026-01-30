@@ -1,5 +1,7 @@
 import AuthForm from "@/components/auth/auth-form";
 
-export default function DoctorLoginPage() {
-    return <AuthForm userType="doctor" />;
+export default function HealthProviderLoginPage() {
+    return <AuthForm userType="health-provider" />;
 }
+
+    
