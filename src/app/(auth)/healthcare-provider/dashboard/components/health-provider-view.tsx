@@ -68,32 +68,21 @@ export function HealthcareProviderView() {
     setShowTempIdDialog(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-3/4" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
-
-  if (!provider || !userProfile) {
-    return <div className="text-center py-12">Could not load provider data. Please try again.</div>;
-  }
-
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
+      {/* Header with Logo */}
       <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-headline font-bold text-primary">Clinical Dashboard</h1>
-          <p className="text-sm text-muted-foreground">{institution?.name || 'Healthcare Institution'}</p>
+        <div className="flex items-center gap-4">
+          <Image src="/swasthyasetu-logo.png" alt="SwasthyaSetu" width={60} height={60} priority />
+          <div>
+            <h1 className="text-2xl md:text-3xl font-headline font-bold text-primary">Clinical Dashboard</h1>
+            <p className="text-sm text-muted-foreground">{institutionName}</p>
+          </div>
         </div>
         <Card className="flex items-center gap-3 p-3 shadow-md">
           <User className="h-10 w-10 text-primary" />
           <div>
-            <p className="font-semibold">{provider.name}</p>
+            <p className="font-semibold">{providerName}</p>
             <p className="text-xs text-muted-foreground">Healthcare Provider</p>
           </div>
         </Card>
