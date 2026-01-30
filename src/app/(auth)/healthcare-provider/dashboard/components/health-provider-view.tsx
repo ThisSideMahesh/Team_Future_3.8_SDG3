@@ -27,7 +27,7 @@ const MOCK_PATIENT_DATA = {
 };
 
 export function HealthcareProviderView() {
-  const { user, isUserLoading: isAuthLoading } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
   
   const [patientId, setPatientId] = useState("");
@@ -39,16 +39,10 @@ export function HealthcareProviderView() {
   const [createdTempId, setCreatedTempId] = useState("");
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, "users", user.uid) : null, [firestore, user]);
-  const { data: userProfile, isLoading: isUserLoading } = useDoc<UserProfile>(userProfileRef);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-  const providerId = userProfile?.user_id;
-  const providerRef = useMemoFirebase(() => providerId ? doc(firestore, "healthcare_providers", providerId) : null, [firestore, providerId]);
-  const { data: provider, isLoading: isProviderLoading } = useDoc<HealthcareProvider>(providerRef);
-
-  const institutionRef = useMemoFirebase(() => provider?.institution_id ? doc(firestore, "institutions", provider.institution_id) : null, [firestore, provider]);
-  const { data: institution, isLoading: isInstitutionLoading } = useDoc<Institution>(institutionRef);
-
-  const isLoading = isAuthLoading || isUserLoading || isProviderLoading || isInstitutionLoading;
+  const providerName = userProfile?.name || "Dr. Aarav Mehta";
+  const institutionName = "AarogyaNova Hospital";
 
   const handleSearch = () => {
     if (!patientId.trim()) return;
