@@ -88,14 +88,14 @@ export function HealthcareProviderView() {
         </Card>
       </div>
 
-      {/* SECTION 1: Patient Search */}
+      {/* Patient Search */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
             Patient Search
           </CardTitle>
-          <CardDescription>Search by Patient ID, QR code, or TEMP-ID for emergency access</CardDescription>
+          <CardDescription>Search by Patient ID, QR code, or TEMP-ID</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -105,15 +105,15 @@ export function HealthcareProviderView() {
               onChange={(e) => setPatientId(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <Button onClick={handleSearch} className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
+            <Button onClick={handleSearch}>
+              <Search className="h-4 w-4 mr-2" />
               Search
             </Button>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => alert('QR Scanner would open here')}>
+            <Button variant="outline" className="flex-1">
               <QrCode className="h-4 w-4 mr-2" />
-              Scan QR Code
+              Scan QR
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => setShowTempIdDialog(true)}>
               <FileWarning className="h-4 w-4 mr-2" />
