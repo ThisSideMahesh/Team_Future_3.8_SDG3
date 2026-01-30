@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useAuth, useDoc, useFirebase, useMemoFirebase, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
