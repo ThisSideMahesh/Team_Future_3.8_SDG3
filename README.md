@@ -1,122 +1,133 @@
-🩺 SwasthyaSetu
+🏥 SwasthyaSetu
 Ek Jeevan. Ek Swasthya Drishti.
 
-SwasthyaSetu is a Bharat-centric Universal Health Record Aggregation Platform designed to securely connect fragmented hospital EMR systems using role-based, consent-driven APIs.
-It enables authorized healthcare professionals to access a single unified patient view without replacing existing hospital infrastructure.
+SwasthyaSetu is a Bharat-centric Universal Health Record Aggregator designed to securely unify fragmented hospital medical records into a single, consent-driven patient view, with special focus on emergency care and interoperability.
+This project is built as a hackathon-ready, production-style prototype aligned with Problem Statement 3.8.
 
-📌 Problem Statement (PS ID: 3.8)
+🎯 Problem Statement (PS 3.8)
 Create a universal health record aggregator using secure APIs for interoperability, targeting hospital EMR integrations.
-Healthcare data today is siloed across multiple hospitals and systems, leading to delayed care, repeated diagnostics, and high risk during emergencies.
 
 💡 Solution Overview
-SwasthyaSetu acts as an API-first interoperability layer, not a new EMR.
-It aggregates patient health records from multiple hospital systems into a unified view while enforcing:
-Patient consent by default
-Strict role-based access control
-Limited, audited emergency access
-Institution-level data isolation
+Today, patient medical data is scattered across multiple hospitals and systems.
+SwasthyaSetu acts as a secure aggregation layer that:
+Connects multiple hospitals through institution-scoped APIs
+Aggregates patient records into one unified view
+Enforces patient consent by default
+Allows limited emergency access when consent is unavailable
+Maintains strict role-based access control
+Hospitals never directly access each other’s data — all access flows through SwasthyaSetu.
 
-🏗️ System Architecture (High Level)
-Frontend: Next.js (App Router) + React
-Backend: Firebase (Firestore, Auth, Admin SDK)
-APIs: Institution-scoped REST APIs
-Security: Multi-layer RBAC + consent validation
-Deployment Style: Jamstack, serverless, scalable
+🧱 Architecture (Track A)
+Frontend
+Next.js (App Router)
+Hosted on AWS Amplify
+Backend
+Firebase Authentication
+Firestore Database
+Firestore Security Rules
+CI/CD
+GitHub → AWS Amplify auto-deploy
+Cloud Functions are intentionally not used in this demo to avoid paid plan dependencies.
+The architecture is fully extensible to server-side APIs in production.
+👥 User Roles
+Role	Responsibility
+Patient	Owns data, manages consent, views access logs
+Healthcare Provider	Views unified records with consent or emergency access
+Institution Admin	Manages providers and institutional activity (no medical data)
+Platform Admin	Manages institutions and APIs (no clinical access)
 
-👥 User Roles & Responsibilities
-
-1️⃣ Patient
-Manage consent
+🖥️ Dashboards
+👤 Patient Dashboard
 View unified health record
+Grant / revoke consent
 View access logs
-UI only (no APIs)
+Emergency-visible critical data (read-only)
 
-2️⃣ Healthcare Provider
-Access patient records with consent
-Emergency access (critical data only)
+🩺 Healthcare Provider Dashboard
+Search patient by ID / QR / TEMP-ID
+Fetch unified health record
+Emergency access (limited fields)
 Create TEMP-ID for unidentified patients
-Uses secure APIs
 
-3️⃣ Healthcare Institution Admin
-Manage healthcare provider accounts
-View institution-level logs (no patient data)
-Governance only
-Uses admin APIs
+🏢 Institution Admin Dashboard
+Manage healthcare providers
+View institutional activity metrics (counts only)
+No access to patient medical data
 
-4️⃣ SwasthyaSetu Platform Admin
-Approve institutions
-Generate and manage API credentials
-Monitor platform health & compliance
-No patient or clinical data access
+🌐 Platform Admin Dashboard
+Onboard hospitals
+Manage API credentials
+View platform-level metrics
+No access to clinical data
 
-🔐 Security & Privacy Model
-Privacy > Convenience
-Consent enforced before every clinical access
+🚨 Emergency Handling (Key Feature)
+Emergency access is read-only
+Returns only:
+Blood group
+Allergies
+Chronic conditions
+Every emergency access is logged and auditable
+Supports TEMP-ID for unidentified patients, later mergeable
 
-Emergency access is:
-Read-only
-Limited to critical data
-Fully logged and audited
-No admin role can access patient medical data
-Raw hospital EMR data is never permanently stored
+🔐 Security Principles
+Consent before access
+Role-based access control
+Institution-level isolation
+Audit logging
+No raw EMR data stored
+No real patient data used
 
-🔌 API-First Interoperability
-APIs are institution-scoped
-API access is created and governed only by Platform Admin
-Supports integration with:
-Hospital EMRs
-Emergency systems
-Clinical dashboards
+📦 Demo Data
+The system uses fully fictional demo data:
+Hospital A, B, and C
+Fictional doctors, admins, and patients
+Sample medical records for demonstration
 
-No APIs are exposed for:
-Patients
-Platform Admin (UI-only governance)
+⚠️ No real-world datasets or personal data are used.
 
-💰 Revenue Model
-B2B SaaS
-Hospitals pay subscription + API usage fees
-B2G (Future Scope)
-Licensing for public health networks
-Patients always free
-No ads, no data selling
+🚀 Deployment
+AWS Amplify (Frontend)
+Connected to GitHub main branch
+Auto-deploy on push
+Uses Amplify-managed WAF with default protections
+Firebase (Backend)
+Firebase Authentication
+Firestore (asia-south1 – Mumbai)
+Firestore Security Rules enforced
 
-📈 Scalability
-Add hospitals via APIs, not redesigns
-Institution-isolated architecture
-Serverless backend scales with demand
-Suitable from local clinics to national health infrastructure
+🛠️ Local Setup
+git clone https://github.com/ThisSideMahesh/Team_Future_3.8_SDG3.git
+cd Team_Future_3.8_SDG3
+npm install
+npm run dev
+Environment variables (handled in Amplify for production):
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
 
-🎯 Impact & SDG Mapping
-SDG 3 – Good Health & Well-Being
-Improves continuity of care
-Reduces medical errors
-Enables faster emergency decisions
+📊 SDG Alignment
+SDG 3 – Good Health and Well-Being
+Improves emergency response
+Reduces medical data fragmentation
+Enables continuity of care
 Strengthens healthcare interoperability
 
-🧪 Demo & Development
-Uses fictional hospitals and users for demo safety
-Pre-seeded data for quick evaluation
-Designed for hackathon and real-world feasibility
+🔮 Future Scope
+Server-side aggregation APIs (Cloud Functions / AWS Lambda)
+Integration with real hospital EMRs
+Full AWS-native backend (Cognito, API Gateway, DynamoDB)
+National-scale interoperability layer
 
-🛠️ Tech Stack
-Next.js 15 + React 19
-TypeScript
-ShadCN/UI + Tailwind CSS
-Firebase Firestore & Authentication
-Firebase Admin SDK
-RBAC + Consent-Driven Access
-Dark Mode Supported (HSL Theming)
+🏁 Demo Readiness
+✔ Role-based dashboards working
+✔ Consent enforcement
+✔ Emergency access flow
+✔ Secure, explainable architecture
+✔ 90-second judge explanation ready
 
-🧠 Core Principle
-Hospitals pay. Patients don’t.
-Privacy is never compromised for convenience.
-
-🏁 Conclusion
-SwasthyaSetu provides a secure, scalable, and governance-driven solution to healthcare data fragmentation, fully aligned with PS 3.8 and SDG 3, while remaining practical for real-world adoption.
-
-👥 Team
-Team Future
-
-Mahesh Namdev Khandebharad – Builder & Pitcher
-
-Aarpita Bhagwan Kalyankar – UI/UX, Documentation, Pitcher
+📢 Final Note
+SwasthyaSetu is designed to be simple, secure, and scalable — prioritizing correctness and trust over buzzwords.
+One Patient. One Health View. For Bharat.
