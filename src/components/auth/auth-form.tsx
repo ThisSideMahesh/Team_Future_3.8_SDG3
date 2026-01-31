@@ -69,10 +69,10 @@ export default function AuthForm({ userType }: AuthFormProps) {
         if (error.code) {
           switch (error.code) {
             case 'auth/user-not-found':
-            case 'auth/wrong-password':
             case 'auth/invalid-credential':
-              description = "Invalid credentials. Please check your email and password.";
+              description = "Account not found or invalid credentials. If this is your first time using this demo email, please use the 'Sign Up' tab to activate it.";
               break;
+            case 'auth/wrong-password':
             case 'auth/email-already-in-use':
               description = "An account with this email is already in use. Please log in.";
               setIsLogin(true);
@@ -223,7 +223,7 @@ export default function AuthForm({ userType }: AuthFormProps) {
                     </FormControl>
                      {userType !== 'patient' && (
                         <FormDescription>
-                           For demo, use one of the pre-seeded email accounts.
+                           For demo, use the <strong>Sign Up</strong> tab first with a pre-seeded email to activate the account.
                         </FormDescription>
                     )}
                     <FormMessage />
