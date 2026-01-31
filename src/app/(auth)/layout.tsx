@@ -108,10 +108,13 @@ export default function AuthLayout({
     )
   }
   
-  if (!user || !userData) {
+  if (!user || (!userData && !isDataLoading)) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
-            <p>Loading...</p>
+            <div className="text-center">
+                <p className="mb-4">Profile not found. Please ensure you have signed up correctly.</p>
+                <Button onClick={handleLogout}>Back to Login</Button>
+            </div>
         </div>
     );
   }
