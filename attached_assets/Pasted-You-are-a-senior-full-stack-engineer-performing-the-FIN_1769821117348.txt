@@ -1,0 +1,185 @@
+You are a senior full-stack engineer performing the FINAL PRE-DEMO
+verification for a healthcare interoperability platform called SwasthyaSetu.
+
+This is the LAST CHECK before demo submission.
+
+--------------------------------------------------
+SYSTEM CONTEXT:
+
+Architecture: Track A
+- Frontend: Next.js (App Router) on AWS Amplify
+- Backend: Firebase Authentication + Firestore
+- Roles:
+  - patient
+  - healthcare_provider
+  - institution_admin
+  - platform_admin
+
+All data MUST be fictional.
+DO NOT use real hospital, doctor, or patient data.
+
+--------------------------------------------------
+GOAL:
+
+1. Verify that ALL dashboards load correctly after login
+2. Verify that role-based routing works correctly
+3. Verify that Firestore data exists where required
+4. If ANY required data is missing:
+   - Automatically create DEMO DATA
+5. If ANY functionality is broken:
+   - Diagnose root cause
+   - Repair it cleanly
+6. End with a clear “DEMO READY” status
+
+--------------------------------------------------
+STEP 1: AUTHENTICATION VERIFICATION
+
+For each role:
+- patient
+- healthcare_provider
+- institution_admin
+- platform_admin
+
+Verify:
+- Firebase login succeeds
+- Auth state resolves correctly
+- No infinite loaders
+- No blank screens
+- No redirect loops
+
+If auth succeeds but dashboard fails:
+→ Investigate Firestore profile existence.
+
+--------------------------------------------------
+STEP 2: USER PROFILE VERIFICATION (CRITICAL)
+
+For every logged-in user:
+- Check Firestore document:
+  /users/{auth.uid}
+
+If profile does NOT exist:
+- Automatically create it with:
+  {
+    uid,
+    name,
+    email,
+    role,
+    institution_id (if applicable),
+    created_at
+  }
+
+Ensure:
+- Profile creation happens only once
+- No overwriting of existing profiles
+
+--------------------------------------------------
+STEP 3: DASHBOARD ROUTING CHECK
+
+Verify routing logic:
+
+- patient → Patient Dashboard
+- healthcare_provider → Healthcare Provider Dashboard
+- institution_admin → Institution Admin Dashboard
+- platform_admin → Platform Admin Dashboard
+
+Dashboards must render ONLY after:
+- auth is ready
+- profile is loaded
+
+If routing fails:
+- Fix role guards
+- Fix loading states
+- Add visible error messages (no silent failures)
+
+--------------------------------------------------
+STEP 4: DASHBOARD CONTENT VERIFICATION
+
+PATIENT DASHBOARD:
+- Unified health record visible
+- Consent toggle works
+- Access logs visible
+- No admin or provider data exposed
+
+HEALTHCARE PROVIDER DASHBOARD:
+- Patient search works
+- Unified record fetch works (with consent)
+- Emergency access works (limited fields)
+- TEMP-ID creation works
+
+INSTITUTION ADMIN DASHBOARD:
+- Provider list loads
+- Activity metrics load (counts only)
+- NO patient medical data visible
+
+PLATFORM ADMIN DASHBOARD:
+- Institution list loads
+- API credentials visible
+- Platform metrics load
+- NO clinical data visible
+
+--------------------------------------------------
+STEP 5: DEMO DATA VERIFICATION & AUTO-CREATION
+
+Check Firestore collections:
+
+- /institutions
+- /users
+- /patients
+- /consents
+- /records
+- /emergency_access_logs
+- /api_credentials
+
+If ANY required demo data is missing:
+→ Automatically seed fictional demo data.
+
+Demo data rules:
+- Use fictional hospital names (Hospital A, B, C)
+- Use fictional patient names
+- Use safe sample medical data
+- NEVER use real datasets or public APIs
+
+--------------------------------------------------
+STEP 6: SECURITY & SAFETY CHECK
+
+Verify:
+- Role-based access enforced
+- Consent enforced for normal access
+- Emergency access is read-only
+- All emergency access logged
+- Platform admin cannot access patient data
+- No secrets exposed in frontend
+
+--------------------------------------------------
+STEP 7: BUILD & DEPLOY CHECK
+
+- Run `npm run build`
+- Ensure build passes with ZERO errors
+- Confirm AWS Amplify deployment succeeds
+- Confirm environment variables are loaded
+
+--------------------------------------------------
+STEP 8: AUTO-REPAIR RULE
+
+If ANY issue is found:
+- Identify root cause
+- Apply minimal, correct fix
+- Re-test affected dashboard
+- Repeat until stable
+
+DO NOT:
+- Hack around security
+- Disable guards
+- Hardcode roles
+- Suppress errors
+
+--------------------------------------------------
+FINAL OUTPUT REQUIRED:
+
+Return a final status report with:
+- ✅ Working dashboards (list per role)
+- ✅ Demo data created (if any)
+- ✅ Known limitations (if any)
+- ✅ “DEMO READY” or “NOT READY” verdict
+
+The system must be explainable to judges in under 90 seconds.
